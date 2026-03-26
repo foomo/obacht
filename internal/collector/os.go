@@ -55,7 +55,7 @@ func (c *OSCollector) collectDarwin(ctx context.Context, facts *schema.Facts) {
 	facts.OS.UserIsStandardAccount = !cmdContains(ctx, "groups", nil, "admin")
 	facts.OS.ScreenSharingDisabled = !cmdContains(ctx, "launchctl", []string{"list", "com.apple.screensharing"}, "")
 	facts.OS.InternetSharingDisabled = !cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/SystemConfiguration/com.apple.nat", "Enabled"}, "1")
-	facts.OS.PrinterSharingDisabled = !cmdContains(ctx, "cupsctl", nil, "share_printers=0")
+	facts.OS.PrinterSharingDisabled = cmdContains(ctx, "cupsctl", nil, "_share_printers=0")
 	facts.OS.RemoteAppleEventsDisabled = !cmdContains(ctx, "launchctl", []string{"list", "com.apple.AEServer"}, "")
 	facts.OS.AirdropSetting = readAirdropSetting(ctx)
 	facts.OS.RosettaInstalled = cmdSucceeds(ctx, "pgrep", []string{"-q", "oahd"})
