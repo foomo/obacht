@@ -1,0 +1,10 @@
+rules:
+  - id: TOL001
+    title: Security-relevant tool is missing
+    severity: info
+    category: tools
+    description: |
+      Some security tools are recommended for a secure development
+      environment. Missing tools may indicate gaps in your security
+      workflow.
+    remediation: "Install missing tools via your package manager"

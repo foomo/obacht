@@ -1,0 +1,9 @@
+rules:
+  - id: OS001
+    title: Operating system may have pending security updates
+    severity: info
+    category: os
+    description: |
+      Keeping the operating system up to date ensures that known
+      security vulnerabilities are patched.
+    remediation: "Check for and install available system updates"

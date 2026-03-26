@@ -1,0 +1,19 @@
+rules:
+  - id: SSH001
+    title: SSH private key has weak permissions
+    severity: high
+    category: ssh
+    description: |
+      SSH private keys should be readable only by the owner.
+      Keys with permissions wider than 0600 can be read by
+      other users on the system.
+    remediation: "Run: chmod 600 ~/.ssh/id_*"
+  - id: SSH002
+    title: SSH directory has weak permissions
+    severity: high
+    category: ssh
+    description: |
+      The ~/.ssh directory should only be accessible by the owner.
+      Permissions wider than 0700 may allow other users to read
+      or modify SSH configuration and keys.
+    remediation: "Run: chmod 700 ~/.ssh"

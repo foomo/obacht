@@ -1,0 +1,19 @@
+rules:
+  - id: DOC001
+    title: Docker socket has overly permissive access
+    severity: high
+    category: docker
+    description: |
+      The Docker socket grants full control over the Docker daemon.
+      World-readable or world-writable permissions allow any user
+      on the system to manage containers and access volumes.
+    remediation: "Run: sudo chmod 660 /var/run/docker.sock"
+  - id: DOC002
+    title: User is in the docker group
+    severity: warn
+    category: docker
+    description: |
+      Membership in the docker group grants root-equivalent access
+      to the Docker daemon. Consider using rootless Docker or
+      requiring sudo for Docker commands.
+    remediation: "See: https://docs.docker.com/engine/security/rootless/"

@@ -1,0 +1,19 @@
+rules:
+  - id: KUB001
+    title: Kubeconfig has weak permissions
+    severity: high
+    category: kube
+    description: |
+      The kubeconfig file contains cluster credentials and should
+      only be readable by the owner. Permissions wider than 0600
+      may expose cluster access tokens.
+    remediation: "Run: chmod 600 ~/.kube/config"
+  - id: KUB002
+    title: Production Kubernetes context is active
+    severity: warn
+    category: kube
+    description: |
+      A Kubernetes context pointing to a production cluster is
+      configured. Accidental kubectl commands could affect
+      production workloads.
+    remediation: "Switch context: kubectl config use-context <dev-context>"

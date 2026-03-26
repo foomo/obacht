@@ -1,0 +1,20 @@
+rules:
+  - id: PTH001
+    title: World-writable directory in PATH
+    severity: high
+    category: path
+    description: |
+      A directory in your PATH is writable by the current user
+      (and potentially others). An attacker could place malicious
+      executables in this directory to hijack commands.
+    remediation: "Remove the writable directory from PATH or fix its permissions"
+  - id: PTH002
+    title: Relative path entry in PATH
+    severity: warn
+    category: path
+    description: |
+      A relative path in PATH (e.g., '.') causes command resolution
+      to depend on the current working directory. An attacker could
+      exploit this by placing malicious executables in commonly
+      visited directories.
+    remediation: "Remove relative paths from PATH and use absolute paths instead"
