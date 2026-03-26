@@ -46,17 +46,20 @@ tidy:
 	@echo "〉go mod tidy"
 	go mod tidy
 
+regal:
+	@regal lint ./policies
+
 .PHONY: lint
 ## Run linter
 lint:
 	@echo "〉golangci-lint run"
-	golangci-lint run
+	golangci-lint run --max-same-issues 0 --max-issues-per-linter 0
 
 .PHONY: lint.fix
 ## Fix lint violations
 lint.fix:
 	@echo "〉golangci-lint run fix"
-	golangci-lint run --fix
+	golangci-lint run --fix --max-same-issues 0 --max-issues-per-linter 0
 
 .PHONY: test
 ## Run tests

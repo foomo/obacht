@@ -40,7 +40,7 @@ func (p *PathCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 			IsRelative: !filepath.IsAbs(entry),
 		}
 
-		info, err := os.Stat(entry)
+		info, err := os.Stat(filepath.Clean(entry))
 		if err == nil && info.IsDir() {
 			dir.Exists = true
 			dir.Writable = isDirWritable(entry)
@@ -51,6 +51,7 @@ func (p *PathCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 
 	facts.Path.Dirs = dirs
 	result.Status = StatusOK
+
 	return result
 }
 
@@ -61,8 +62,10 @@ func isDirWritable(path string) bool {
 	if err != nil {
 		return false
 	}
+
 	name := f.Name()
 	f.Close()
-	os.Remove(name)
+	os.Remove(filepath.Clean(name))
+
 	return true
 }

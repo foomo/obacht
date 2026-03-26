@@ -1,10 +1,11 @@
-package reporter
+package reporter_test
 
 import (
 	"bytes"
 	"encoding/json"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/reporter"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,12 +31,14 @@ func TestJSONReporter_Report(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	reporter := &JSONReporter{}
-	err := reporter.Report(&buf, &result)
+
+	r := &reporter.JSONReporter{}
+	err := r.Report(&buf, &result)
 	require.NoError(t, err)
 
 	// Verify it is valid JSON
 	var decoded schema.ScanResult
+
 	err = json.Unmarshal(buf.Bytes(), &decoded)
 	require.NoError(t, err, "output must be valid JSON")
 
@@ -70,8 +73,9 @@ func TestJSONReporter_OutputIsIndented(t *testing.T) {
 	})
 
 	var buf bytes.Buffer
-	reporter := &JSONReporter{}
-	err := reporter.Report(&buf, &result)
+
+	r := &reporter.JSONReporter{}
+	err := r.Report(&buf, &result)
 	require.NoError(t, err)
 
 	// Verify output uses 2-space indentation

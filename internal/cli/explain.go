@@ -39,11 +39,13 @@ func runExplain(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(os.Stderr, "loading external rules: %v\n", err)
 			os.Exit(Error)
 		}
+
 		rules = mergeRules(rules, extRules)
 	}
 
 	// Find the rule matching the given ID (case-insensitive).
 	var found *schema.Rule
+
 	for i := range rules {
 		if strings.EqualFold(rules[i].ID, ruleID) {
 			found = &rules[i]
@@ -57,6 +59,7 @@ func runExplain(cmd *cobra.Command, args []string) error {
 	}
 
 	printRule(found)
+
 	return nil
 }
 
@@ -71,6 +74,7 @@ func printRule(r *schema.Rule) {
 
 	if r.Description != "" {
 		fmt.Printf("\n%s\n", boldStyle.Render("Description:"))
+
 		for _, line := range wrapLines(r.Description) {
 			fmt.Printf("  %s\n", line)
 		}
@@ -78,6 +82,7 @@ func printRule(r *schema.Rule) {
 
 	if r.Remediation != "" {
 		fmt.Printf("\n%s\n", boldStyle.Render("Remediation:"))
+
 		for _, line := range wrapLines(r.Remediation) {
 			fmt.Printf("  %s\n", line)
 		}
@@ -102,11 +107,13 @@ func severityColorStyle(s schema.Severity) lipgloss.Style {
 // wrapLines splits text into trimmed, non-empty lines.
 func wrapLines(text string) []string {
 	var lines []string
-	for _, line := range strings.Split(text, "\n") {
+
+	for line := range strings.SplitSeq(text, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed != "" {
 			lines = append(lines, trimmed)
 		}
 	}
+
 	return lines
 }

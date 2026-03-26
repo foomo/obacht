@@ -1,4 +1,4 @@
-package collector
+package collector_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,12 +15,12 @@ import (
 func TestSSHCollector_NoSSHDir(t *testing.T) {
 	home := t.TempDir() // no .ssh inside
 
-	c := &SSHCollector{homeDir: home}
+	c := &collector.SSHCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
 	assert.Equal(t, "ssh", result.Name)
-	assert.Equal(t, StatusSkipped, result.Status)
+	assert.Equal(t, collector.StatusSkipped, result.Status)
 	assert.False(t, facts.SSH.DirectoryExists)
 }
 
@@ -37,12 +38,12 @@ func TestSSHCollector_WithKeys(t *testing.T) {
 	// Create config file.
 	writeFile(t, filepath.Join(sshDir, "config"), 0644)
 
-	c := &SSHCollector{homeDir: home}
+	c := &collector.SSHCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
-	assert.Nil(t, result.Error)
+	assert.Equal(t, collector.StatusOK, result.Status)
+	require.NoError(t, result.Error)
 
 	assert.True(t, facts.SSH.DirectoryExists)
 	assert.Equal(t, "0700", facts.SSH.DirectoryMode)
@@ -70,11 +71,11 @@ func TestSSHCollector_NoConfig(t *testing.T) {
 	sshDir := filepath.Join(home, ".ssh")
 	require.NoError(t, os.MkdirAll(sshDir, 0700))
 
-	c := &SSHCollector{homeDir: home}
+	c := &collector.SSHCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.True(t, facts.SSH.DirectoryExists)
 	assert.False(t, facts.SSH.ConfigExists)
 	assert.Empty(t, facts.SSH.Keys)
@@ -93,7 +94,7 @@ func TestKeyTypeFromFilename(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
-			assert.Equal(t, tt.expected, keyTypeFromFilename(tt.filename))
+			assert.Equal(t, tt.expected, collector.ExportKeyTypeFromFilename(tt.filename))
 		})
 	}
 }

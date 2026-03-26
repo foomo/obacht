@@ -1,36 +1,15 @@
-package collector
+package collector_test
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// fakeRunner is a test double for CommandRunner.
-type fakeRunner struct {
-	// results maps "name arg1 arg2 ..." to the output or error.
-	results map[string]fakeResult
-}
-
-type fakeResult struct {
-	output []byte
-	err    error
-}
-
-func (f *fakeRunner) Run(_ context.Context, name string, args ...string) ([]byte, error) {
-	key := name
-	if len(args) > 0 {
-		key += " " + fmt.Sprintf("%s", args)
-	}
-	if r, ok := f.results[key]; ok {
-		return r.output, r.err
-	}
-	return nil, fmt.Errorf("unexpected command: %s", key)
-}
 
 func TestParseGitConfig_FullSigning(t *testing.T) {
 	input := `user.name=John Doe
@@ -39,8 +18,9 @@ credential.helper=store
 commit.gpgsign=true
 gpg.format=ssh
 `
+
 	var git schema.GitFacts
-	parseGitConfig(input, &git)
+	collector.ExportParseGitConfig(input, &git)
 
 	assert.Equal(t, "store", git.CredentialHelper)
 	assert.True(t, git.SigningEnabled)
@@ -51,40 +31,39 @@ func TestParseGitConfig_NoSigning(t *testing.T) {
 	input := `user.name=Jane Doe
 user.email=jane@example.com
 `
-	var git schema.GitFacts
-	parseGitConfig(input, &git)
 
-	assert.Equal(t, "", git.CredentialHelper)
+	var git schema.GitFacts
+	collector.ExportParseGitConfig(input, &git)
+
+	assert.Empty(t, git.CredentialHelper)
 	assert.False(t, git.SigningEnabled)
-	assert.Equal(t, "", git.SigningFormat)
+	assert.Empty(t, git.SigningFormat)
 }
 
 func TestGitCollector_Collect(t *testing.T) {
-	runner := &fakeRunner{
-		results: map[string]fakeResult{
-			"git [--version]": {
-				output: []byte("git version 2.45.0\n"),
-			},
-			"git [config --global --list]": {
-				output: []byte("credential.helper=store\ncommit.gpgsign=true\ngpg.format=ssh\n"),
-			},
+	runner := collector.NewFakeRunner(map[string]collector.FakeResult{
+		"git [--version]": {
+			Output: []byte("git version 2.45.0\n"),
 		},
-	}
+		"git [config --global --list]": {
+			Output: []byte("credential.helper=store\ncommit.gpgsign=true\ngpg.format=ssh\n"),
+		},
+	})
 
-	collector := &GitCollector{Runner: runner}
+	c := &collector.GitCollector{Runner: runner}
 	facts := schema.NewFacts()
 
 	// Note: this test only works when git is actually on PATH.
 	// If git is not installed, the collector returns StatusSkipped
 	// before it even calls the runner.
-	result := collector.Collect(context.Background(), &facts)
+	result := c.Collect(context.Background(), &facts)
 
-	if result.Status == StatusSkipped {
+	if result.Status == collector.StatusSkipped {
 		t.Skip("git not found on PATH, skipping integration-style test")
 	}
 
 	require.NoError(t, result.Error)
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, "git", result.Name)
 	assert.True(t, facts.Git.Installed)
 	assert.Equal(t, "git version 2.45.0", facts.Git.Version)
@@ -94,23 +73,21 @@ func TestGitCollector_Collect(t *testing.T) {
 }
 
 func TestGitCollector_VersionError(t *testing.T) {
-	runner := &fakeRunner{
-		results: map[string]fakeResult{
-			"git [--version]": {
-				err: fmt.Errorf("command failed"),
-			},
+	runner := collector.NewFakeRunner(map[string]collector.FakeResult{
+		"git [--version]": {
+			Err: fmt.Errorf("command failed"),
 		},
-	}
+	})
 
-	collector := &GitCollector{Runner: runner}
+	c := &collector.GitCollector{Runner: runner}
 	facts := schema.NewFacts()
 
-	result := collector.Collect(context.Background(), &facts)
+	result := c.Collect(context.Background(), &facts)
 
-	if result.Status == StatusSkipped {
+	if result.Status == collector.StatusSkipped {
 		t.Skip("git not found on PATH, skipping test")
 	}
 
-	assert.Equal(t, StatusError, result.Status)
+	assert.Equal(t, collector.StatusError, result.Status)
 	assert.Error(t, result.Error)
 }

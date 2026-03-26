@@ -23,6 +23,7 @@ var rootCmd = &cobra.Command{
 		default:
 			return fmt.Errorf("invalid format %q: must be pretty or json", format)
 		}
+
 		return nil
 	},
 }

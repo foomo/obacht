@@ -36,14 +36,18 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 
 	// Group results by category.
 	groups := make(map[string][]schema.CheckResult)
+
 	var categoryOrder []string
+
 	for _, cr := range result.Results {
 		cat := cr.Category
 		if _, exists := groups[cat]; !exists {
 			categoryOrder = append(categoryOrder, cat)
 		}
+
 		groups[cat] = append(groups[cat], cr)
 	}
+
 	sort.Strings(categoryOrder)
 
 	// Sort each group by severity (critical first).
@@ -62,6 +66,7 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 
 		for _, cr := range checks {
 			var icon string
+
 			switch cr.Status {
 			case schema.StatusPass:
 				icon = greenStyle.Render("\u2713")
@@ -80,11 +85,13 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 				if cr.Evidence != "" {
 					fmt.Fprintf(w, "      Evidence: %s\n", cr.Evidence)
 				}
+
 				if cr.Remediation != "" {
 					fmt.Fprintf(w, "      Fix: %s\n", cr.Remediation)
 				}
 			}
 		}
+
 		fmt.Fprintln(w)
 	}
 

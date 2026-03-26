@@ -1,10 +1,11 @@
-package collector
+package collector_test
 
 import (
 	"context"
 	"os"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,13 +25,13 @@ func TestPathCollector_Collect(t *testing.T) {
 	controlledPATH := writableDir + ":" + nonExistent + ":" + relativePath
 	t.Setenv("PATH", controlledPATH)
 
-	collector := NewPathCollector()
+	c := collector.NewPathCollector()
 	facts := schema.NewFacts()
 
-	result := collector.Collect(context.Background(), &facts)
+	result := c.Collect(context.Background(), &facts)
 
 	require.NoError(t, result.Error)
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, "path", result.Name)
 
 	require.Len(t, facts.Path.Dirs, 3)
@@ -55,26 +56,26 @@ func TestPathCollector_Collect(t *testing.T) {
 func TestPathCollector_EmptyPATH(t *testing.T) {
 	t.Setenv("PATH", "")
 
-	collector := NewPathCollector()
+	c := collector.NewPathCollector()
 	facts := schema.NewFacts()
 
-	result := collector.Collect(context.Background(), &facts)
+	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Empty(t, facts.Path.Dirs)
 }
 
 func TestIsDirWritable(t *testing.T) {
 	// Writable temp dir.
 	dir := t.TempDir()
-	assert.True(t, isDirWritable(dir))
+	assert.True(t, collector.ExportIsDirWritable(dir))
 
 	// Non-existent dir.
-	assert.False(t, isDirWritable("/tmp/bouncer-nonexistent-dir-check"))
+	assert.False(t, collector.ExportIsDirWritable("/tmp/bouncer-nonexistent-dir-check"))
 
 	// Read-only dir.
 	roDir := t.TempDir()
 	require.NoError(t, os.Chmod(roDir, 0o555))
-	t.Cleanup(func() { os.Chmod(roDir, 0o755) })
-	assert.False(t, isDirWritable(roDir))
+	t.Cleanup(func() { _ = os.Chmod(roDir, 0o755) })
+	assert.False(t, collector.ExportIsDirWritable(roDir))
 }

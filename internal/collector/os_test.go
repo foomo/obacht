@@ -1,22 +1,24 @@
-package collector
+package collector_test
 
 import (
 	"context"
 	"runtime"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestOSCollector(t *testing.T) {
-	c := NewOSCollector()
+	c := collector.NewOSCollector()
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
 	assert.Equal(t, "os", result.Name)
-	assert.Equal(t, StatusOK, result.Status)
-	assert.Nil(t, result.Error)
+	assert.Equal(t, collector.StatusOK, result.Status)
+	require.NoError(t, result.Error)
 
 	assert.Equal(t, runtime.GOOS, facts.OS.OS)
 	assert.Equal(t, runtime.GOARCH, facts.OS.Arch)

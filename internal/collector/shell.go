@@ -11,8 +11,8 @@ import (
 
 // ShellCollector gathers facts about the user's shell configuration.
 type ShellCollector struct {
-	// homeDir overrides the user's home directory for testing.
-	homeDir string
+	// HomeDir overrides the user's home directory for testing.
+	HomeDir string
 }
 
 // NewShellCollector returns a ShellCollector that uses the real home directory.
@@ -28,9 +28,10 @@ func (c *ShellCollector) Name() string {
 // Collect populates facts.Shell with the current shell, history file info,
 // and HISTCONTROL setting.
 func (c *ShellCollector) Collect(_ context.Context, facts *schema.Facts) Result {
-	home := c.homeDir
+	home := c.HomeDir
 	if home == "" {
 		var err error
+
 		home, err = os.UserHomeDir()
 		if err != nil {
 			return Result{Name: c.Name(), Status: StatusError, Error: fmt.Errorf("determine home dir: %w", err)}

@@ -39,8 +39,8 @@ type EnvCollector struct {
 	ExactMatches []string
 	// SuffixPatterns lists suffixes that flag an env var by suffix match.
 	SuffixPatterns []string
-	// environFunc overrides os.Environ for testing.
-	environFunc func() []string
+	// EnvironFunc overrides os.Environ for testing.
+	EnvironFunc func() []string
 }
 
 // NewEnvCollector returns an EnvCollector with default patterns.
@@ -60,8 +60,8 @@ func (c *EnvCollector) Name() string {
 // the configured suspicious patterns.
 func (c *EnvCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 	environ := os.Environ
-	if c.environFunc != nil {
-		environ = c.environFunc
+	if c.EnvironFunc != nil {
+		environ = c.EnvironFunc
 	}
 
 	exactSet := make(map[string]bool, len(c.ExactMatches))
@@ -70,6 +70,7 @@ func (c *EnvCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 	}
 
 	var suspicious []schema.SuspiciousVar
+
 	for _, entry := range environ() {
 		name, _, ok := strings.Cut(entry, "=")
 		if !ok {
@@ -81,6 +82,7 @@ func (c *EnvCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 				Name:    name,
 				Pattern: "exact:" + name,
 			})
+
 			continue
 		}
 
@@ -90,6 +92,7 @@ func (c *EnvCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 					Name:    name,
 					Pattern: "*" + suffix,
 				})
+
 				break
 			}
 		}

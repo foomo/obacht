@@ -43,7 +43,6 @@ func CollectAll(ctx context.Context, collectors []Collector) (*schema.Facts, []R
 	g, ctx := errgroup.WithContext(ctx)
 
 	for i, c := range collectors {
-		i, c := i, c
 		g.Go(func() error {
 			results[i] = c.Collect(ctx, &facts)
 			return nil // collectors don't fail the group, they return status

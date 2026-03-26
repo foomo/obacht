@@ -82,6 +82,7 @@ func NewScanResult(results []CheckResult) ScanResult {
 		case StatusError:
 			s.Errors++
 		}
+
 		switch r.Severity {
 		case SeverityCritical:
 			s.Critical++
@@ -93,6 +94,7 @@ func NewScanResult(results []CheckResult) ScanResult {
 			s.Info++
 		}
 	}
+
 	return ScanResult{
 		SchemaVersion: "1.0",
 		Results:       results,

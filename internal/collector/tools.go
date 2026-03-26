@@ -62,6 +62,7 @@ func (t *ToolsCollector) Collect(ctx context.Context, facts *schema.Facts) Resul
 			if idx := strings.IndexByte(version, '\n'); idx >= 0 {
 				version = version[:idx]
 			}
+
 			info.Version = version
 		}
 
@@ -70,5 +71,6 @@ func (t *ToolsCollector) Collect(ctx context.Context, facts *schema.Facts) Resul
 
 	facts.Tools.Tools = tools
 	result.Status = StatusOK
+
 	return result
 }

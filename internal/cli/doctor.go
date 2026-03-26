@@ -41,6 +41,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// --- OPA Binary ---
 	fmt.Println(boldStyle.Render("OPA Binary"))
+
 	opaPath, err := exec.LookPath("opa")
 	if err != nil {
 		fmt.Printf("  Status: %s not installed\n", redStyle.Render("\u2717"))
@@ -49,7 +50,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Status: %s installed\n", greenStyle.Render("\u2713"))
 		fmt.Printf("  Path:   %s\n", opaPath)
 
-		out, err := exec.Command(opaPath, "version").CombinedOutput()
+		out, err := exec.CommandContext(ctx, opaPath, "version").CombinedOutput()
 		if err == nil {
 			version := parseOPAVersionString(string(out))
 			if version != "" {
@@ -57,6 +58,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			}
 		}
 	}
+
 	fmt.Println()
 
 	// --- Policies ---
@@ -78,6 +80,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(os.Stderr, "  Error loading external rules: %v\n", err)
 		} else {
 			rules = mergeRules(rules, extRules)
+
 			regoFiles = append(regoFiles, extRego...)
 		}
 	}
@@ -90,8 +93,10 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		for i, r := range rules {
 			ids[i] = r.ID
 		}
+
 		fmt.Printf("  IDs:    %s\n", strings.Join(ids, ", "))
 	}
+
 	fmt.Println()
 
 	// --- Collectors ---
@@ -115,6 +120,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	} else {
 		for _, r := range results {
 			var icon string
+
 			switch r.Status {
 			case collector.StatusOK:
 				icon = greenStyle.Render("\u2713")
@@ -123,13 +129,16 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			case collector.StatusError:
 				icon = redStyle.Render("\u2717")
 			}
+
 			statusStr := string(r.Status)
 			if r.Status == collector.StatusError && r.Error != nil {
 				statusStr = fmt.Sprintf("error: %v", r.Error)
 			}
+
 			fmt.Printf("  %s %-8s %s\n", icon, r.Name, statusStr)
 		}
 	}
+
 	fmt.Println()
 
 	// --- System ---
@@ -144,10 +153,10 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 // parseOPAVersionString extracts the version number from opa version output.
 func parseOPAVersionString(output string) string {
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "Version:") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "Version:"))
+		if after, ok := strings.CutPrefix(line, "Version:"); ok {
+			return strings.TrimSpace(after)
 		}
 		// Some versions output just the version number on a line with digits.
 		matches := versionRegexpForDoctor.FindString(line)
@@ -155,5 +164,6 @@ func parseOPAVersionString(output string) string {
 			return matches
 		}
 	}
+
 	return ""
 }

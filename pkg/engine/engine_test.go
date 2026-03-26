@@ -1,4 +1,4 @@
-package engine
+package engine_test
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/franklinkim/bouncer/internal/collector"
+	"github.com/franklinkim/bouncer/pkg/engine"
 	"github.com/franklinkim/bouncer/pkg/schema"
 )
 
@@ -33,6 +34,7 @@ var testRules = []schema.Rule{
 
 func skipIfNoOPA(t *testing.T) {
 	t.Helper()
+
 	if _, err := exec.LookPath("opa"); err != nil {
 		t.Skip("opa not found in PATH, skipping test")
 	}
@@ -41,7 +43,7 @@ func skipIfNoOPA(t *testing.T) {
 func TestEvaluate_Fail(t *testing.T) {
 	skipIfNoOPA(t)
 
-	eng, err := NewEngine([][]byte{testPolicy}, testRules)
+	eng, err := engine.NewEngine([][]byte{testPolicy}, testRules)
 	require.NoError(t, err)
 
 	facts := schema.NewFacts()
@@ -68,7 +70,7 @@ func TestEvaluate_Fail(t *testing.T) {
 func TestEvaluate_Pass(t *testing.T) {
 	skipIfNoOPA(t)
 
-	eng, err := NewEngine([][]byte{testPolicy}, testRules)
+	eng, err := engine.NewEngine([][]byte{testPolicy}, testRules)
 	require.NoError(t, err)
 
 	facts := schema.NewFacts()
@@ -94,7 +96,7 @@ func TestEvaluate_Pass(t *testing.T) {
 func TestEvaluate_CollectorSkipped(t *testing.T) {
 	skipIfNoOPA(t)
 
-	eng, err := NewEngine([][]byte{testPolicy}, testRules)
+	eng, err := engine.NewEngine([][]byte{testPolicy}, testRules)
 	require.NoError(t, err)
 
 	facts := schema.NewFacts()

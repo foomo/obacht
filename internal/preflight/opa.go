@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -13,7 +14,7 @@ var versionRegexp = regexp.MustCompile(`(\d+)\.(\d+)\.(\d+)`)
 // CheckOPA verifies that the opa binary is available in PATH and that its
 // version is >= 1.0.0. It returns a descriptive error with installation hints
 // when the check fails.
-func CheckOPA() error {
+func CheckOPA(ctx context.Context) error {
 	path, err := exec.LookPath("opa")
 	if err != nil {
 		return fmt.Errorf(
@@ -21,7 +22,7 @@ func CheckOPA() error {
 		)
 	}
 
-	out, err := exec.Command(path, "version").CombinedOutput()
+	out, err := exec.CommandContext(ctx, path, "version").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to run opa version: %w", err)
 	}
@@ -41,16 +42,19 @@ func CheckOPA() error {
 	return nil
 }
 
-func parseOPAVersion(output string) (major, minor, patch int, err error) {
-	for _, line := range strings.Split(output, "\n") {
+func parseOPAVersion(output string) (int, int, int, error) {
+	for line := range strings.SplitSeq(output, "\n") {
 		matches := versionRegexp.FindStringSubmatch(line)
 		if matches == nil {
 			continue
 		}
-		major, _ = strconv.Atoi(matches[1])
-		minor, _ = strconv.Atoi(matches[2])
-		patch, _ = strconv.Atoi(matches[3])
+
+		major, _ := strconv.Atoi(matches[1])
+		minor, _ := strconv.Atoi(matches[2])
+		patch, _ := strconv.Atoi(matches[3])
+
 		return major, minor, patch, nil
 	}
+
 	return 0, 0, 0, fmt.Errorf("could not parse opa version from output: %s", output)
 }

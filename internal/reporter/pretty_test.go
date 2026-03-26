@@ -1,9 +1,11 @@
-package reporter
+package reporter_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/reporter"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,14 +47,17 @@ func sampleScanResult() *schema.ScanResult {
 		},
 	}
 	sr := schema.NewScanResult(results)
+
 	return &sr
 }
 
 func TestPrettyReporter_ContainsPassMarker(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	// Pass marker (checkmark) should be present.
@@ -61,9 +66,11 @@ func TestPrettyReporter_ContainsPassMarker(t *testing.T) {
 
 func TestPrettyReporter_ContainsFailMarker(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	// Fail marker (cross) should be present.
@@ -72,9 +79,11 @@ func TestPrettyReporter_ContainsFailMarker(t *testing.T) {
 
 func TestPrettyReporter_ContainsRuleIDs(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	assert.Contains(t, out, "SSH001")
@@ -85,9 +94,11 @@ func TestPrettyReporter_ContainsRuleIDs(t *testing.T) {
 
 func TestPrettyReporter_ContainsSummary(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	assert.Contains(t, out, "Summary:")
@@ -100,9 +111,11 @@ func TestPrettyReporter_ContainsSummary(t *testing.T) {
 
 func TestPrettyReporter_ContainsEvidence(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	assert.Contains(t, out, "Evidence: ~/.ssh has mode 0755")
@@ -111,9 +124,11 @@ func TestPrettyReporter_ContainsEvidence(t *testing.T) {
 
 func TestPrettyReporter_SkipMarker(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	// Skip uses a dash.
@@ -122,9 +137,11 @@ func TestPrettyReporter_SkipMarker(t *testing.T) {
 
 func TestPrettyReporter_ErrorMarker(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	assert.Contains(t, out, "! GIT002")
@@ -132,9 +149,11 @@ func TestPrettyReporter_ErrorMarker(t *testing.T) {
 
 func TestPrettyReporter_GroupsByCategory(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	// Both category headers should appear.
@@ -144,13 +163,15 @@ func TestPrettyReporter_GroupsByCategory(t *testing.T) {
 
 func TestPrettyReporter_SeveritySortWithinCategory(t *testing.T) {
 	var buf bytes.Buffer
-	r := NewPrettyReporter()
+
+	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
+
 	out := buf.String()
 
 	// In the Git category, GIT002 (high) should appear before GIT001 (warn).
-	git002Pos := bytes.Index([]byte(out), []byte("GIT002"))
-	git001Pos := bytes.Index([]byte(out), []byte("GIT001"))
+	git002Pos := strings.Index(out, "GIT002")
+	git001Pos := strings.Index(out, "GIT001")
 	assert.Greater(t, git001Pos, git002Pos, "GIT002 (high) should appear before GIT001 (warn)")
 }

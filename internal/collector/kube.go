@@ -12,9 +12,9 @@ import (
 
 // KubeCollector gathers facts about the user's Kubernetes configuration.
 type KubeCollector struct {
-	// homeDir overrides the user's home directory. When empty, os.UserHomeDir
-	// is used. This field is unexported so that only tests can set it.
-	homeDir string
+	// HomeDir overrides the user's home directory. When empty, os.UserHomeDir
+	// is used.
+	HomeDir string
 }
 
 // NewKubeCollector returns a KubeCollector that uses the real home directory.
@@ -55,8 +55,10 @@ func (c *KubeCollector) Collect(ctx context.Context, facts *schema.Facts) Result
 		facts.Kube = schema.KubeFacts{
 			ConfigExists: false,
 		}
+
 		return Result{Name: c.Name(), Status: StatusSkipped}
 	}
+
 	if err != nil {
 		return Result{Name: c.Name(), Status: StatusError, Error: fmt.Errorf("stat %s: %w", configPath, err)}
 	}
@@ -87,13 +89,15 @@ func (c *KubeCollector) Collect(ctx context.Context, facts *schema.Facts) Result
 
 // configPath returns the path to the kubeconfig file.
 func (c *KubeCollector) configPath() (string, error) {
-	home := c.homeDir
+	home := c.HomeDir
 	if home == "" {
 		var err error
+
 		home, err = os.UserHomeDir()
 		if err != nil {
 			return "", err
 		}
 	}
+
 	return filepath.Join(home, ".kube", "config"), nil
 }

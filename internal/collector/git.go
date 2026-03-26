@@ -22,11 +22,14 @@ type execRunner struct{}
 
 func (e *execRunner) Run(ctx context.Context, name string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
+
 	var out bytes.Buffer
+
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
 		return nil, err
 	}
+
 	return out.Bytes(), nil
 }
 
@@ -54,6 +57,7 @@ func (g *GitCollector) Collect(ctx context.Context, facts *schema.Facts) Result 
 		result.Status = StatusSkipped
 		return result
 	}
+
 	facts.Git.Installed = true
 
 	// Get git version.
@@ -61,8 +65,10 @@ func (g *GitCollector) Collect(ctx context.Context, facts *schema.Facts) Result 
 	if err != nil {
 		result.Status = StatusError
 		result.Error = fmt.Errorf("git --version: %w", err)
+
 		return result
 	}
+
 	facts.Git.Version = strings.TrimSpace(string(versionOut))
 
 	// Get global git config.
@@ -76,12 +82,13 @@ func (g *GitCollector) Collect(ctx context.Context, facts *schema.Facts) Result 
 	parseGitConfig(string(configOut), &facts.Git)
 
 	result.Status = StatusOK
+
 	return result
 }
 
 // parseGitConfig extracts relevant fields from git config key=value output.
 func parseGitConfig(output string, git *schema.GitFacts) {
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -91,6 +98,7 @@ func parseGitConfig(output string, git *schema.GitFacts) {
 		if len(parts) != 2 {
 			continue
 		}
+
 		key := strings.ToLower(parts[0])
 		value := parts[1]
 

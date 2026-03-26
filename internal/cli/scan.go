@@ -39,16 +39,20 @@ func parseCategories() map[string]bool {
 	if category == "" {
 		return nil
 	}
+
 	cats := make(map[string]bool)
-	for _, c := range strings.Split(category, ",") {
+
+	for c := range strings.SplitSeq(category, ",") {
 		c = strings.TrimSpace(c)
 		if c != "" {
 			cats[c] = true
 		}
 	}
+
 	if len(cats) == 0 {
 		return nil
 	}
+
 	return cats
 }
 
@@ -57,12 +61,15 @@ func filterCollectors(collectors []collector.Collector, cats map[string]bool) []
 	if cats == nil {
 		return collectors
 	}
+
 	var filtered []collector.Collector
+
 	for _, c := range collectors {
 		if cats[c.Name()] {
 			filtered = append(filtered, c)
 		}
 	}
+
 	return filtered
 }
 
@@ -71,12 +78,15 @@ func filterRules(rules []schema.Rule, cats map[string]bool) []schema.Rule {
 	if cats == nil {
 		return rules
 	}
+
 	var filtered []schema.Rule
+
 	for _, r := range rules {
 		if cats[r.Category] {
 			filtered = append(filtered, r)
 		}
 	}
+
 	return filtered
 }
 
@@ -84,7 +94,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Step 1: Preflight check for OPA.
-	if err := preflight.CheckOPA(); err != nil {
+	if err := preflight.CheckOPA(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "preflight: %v\n", err)
 		os.Exit(Error)
 	}
@@ -110,7 +120,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 			fmt.Fprintf(os.Stderr, "loading external rules: %v\n", err)
 			os.Exit(Error)
 		}
+
 		rules = mergeRules(rules, extRules)
+
 		regoFiles = append(regoFiles, extRego...)
 	}
 
@@ -177,6 +189,7 @@ func loadEmbeddedRules() ([]schema.Rule, error) {
 		if err != nil {
 			return err
 		}
+
 		if d.IsDir() || !strings.HasSuffix(path, ".yaml") {
 			return nil
 		}
@@ -192,6 +205,7 @@ func loadEmbeddedRules() ([]schema.Rule, error) {
 		}
 
 		rules = append(rules, rf.Rules...)
+
 		return nil
 	})
 
@@ -206,6 +220,7 @@ func loadEmbeddedRego() ([][]byte, error) {
 		if err != nil {
 			return err
 		}
+
 		if d.IsDir() || !strings.HasSuffix(path, ".rego") || strings.HasSuffix(path, "_test.rego") {
 			return nil
 		}
@@ -216,6 +231,7 @@ func loadEmbeddedRego() ([][]byte, error) {
 		}
 
 		regoFiles = append(regoFiles, data)
+
 		return nil
 	})
 
@@ -224,8 +240,10 @@ func loadEmbeddedRego() ([][]byte, error) {
 
 // loadExternalRules loads rule YAML and Rego files from an external directory.
 func loadExternalRules(dir string) ([]schema.Rule, [][]byte, error) {
-	var rules []schema.Rule
-	var regoFiles [][]byte
+	var (
+		rules     []schema.Rule
+		regoFiles [][]byte
+	)
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -245,10 +263,12 @@ func loadExternalRules(dir string) ([]schema.Rule, [][]byte, error) {
 			if err != nil {
 				return nil, nil, fmt.Errorf("reading %s: %w", path, err)
 			}
+
 			var rf schema.RulesFile
 			if err := yaml.Unmarshal(data, &rf); err != nil {
 				return nil, nil, fmt.Errorf("parsing %s: %w", path, err)
 			}
+
 			rules = append(rules, rf.Rules...)
 
 		case strings.HasSuffix(entry.Name(), ".rego") && !strings.HasSuffix(entry.Name(), "_test.rego"):
@@ -256,6 +276,7 @@ func loadExternalRules(dir string) ([]schema.Rule, [][]byte, error) {
 			if err != nil {
 				return nil, nil, fmt.Errorf("reading %s: %w", path, err)
 			}
+
 			regoFiles = append(regoFiles, data)
 		}
 	}
@@ -275,12 +296,14 @@ func mergeRules(builtIn, external []schema.Rule) []schema.Rule {
 	// Override built-in rules where external ones exist.
 	merged := make([]schema.Rule, 0, len(builtIn)+len(external))
 	seen := make(map[string]bool)
+
 	for _, r := range builtIn {
 		if ext, ok := extMap[r.ID]; ok {
 			merged = append(merged, ext)
 		} else {
 			merged = append(merged, r)
 		}
+
 		seen[r.ID] = true
 	}
 

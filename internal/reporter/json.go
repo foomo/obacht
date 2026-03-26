@@ -14,5 +14,6 @@ type JSONReporter struct{}
 func (r *JSONReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
+
 	return enc.Encode(result)
 }

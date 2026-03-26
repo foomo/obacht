@@ -12,9 +12,9 @@ import (
 
 // SSHCollector gathers facts about the user's SSH configuration and keys.
 type SSHCollector struct {
-	// homeDir overrides the user's home directory. When empty, os.UserHomeDir
-	// is used. This field is unexported so that only tests can set it.
-	homeDir string
+	// HomeDir overrides the user's home directory. When empty, os.UserHomeDir
+	// is used.
+	HomeDir string
 }
 
 // NewSSHCollector returns an SSHCollector that uses the real home directory.
@@ -41,8 +41,10 @@ func (c *SSHCollector) Collect(ctx context.Context, facts *schema.Facts) Result 
 		facts.SSH = schema.SSHFacts{
 			DirectoryExists: false,
 		}
+
 		return Result{Name: c.Name(), Status: StatusSkipped}
 	}
+
 	if err != nil {
 		return Result{Name: c.Name(), Status: StatusError, Error: fmt.Errorf("stat %s: %w", sshDir, err)}
 	}
@@ -85,14 +87,16 @@ func (c *SSHCollector) Collect(ctx context.Context, facts *schema.Facts) Result 
 
 // sshDir returns the path to the SSH directory.
 func (c *SSHCollector) sshDir() (string, error) {
-	home := c.homeDir
+	home := c.HomeDir
 	if home == "" {
 		var err error
+
 		home, err = os.UserHomeDir()
 		if err != nil {
 			return "", err
 		}
 	}
+
 	return filepath.Join(home, ".ssh"), nil
 }
 
@@ -100,8 +104,9 @@ func (c *SSHCollector) sshDir() (string, error) {
 // For example "id_ed25519" -> "ed25519", "id_rsa" -> "rsa".
 // If the name does not follow the id_<type> convention, the full filename is returned.
 func keyTypeFromFilename(name string) string {
-	if strings.HasPrefix(name, "id_") {
-		return strings.TrimPrefix(name, "id_")
+	if after, ok := strings.CutPrefix(name, "id_"); ok {
+		return after
 	}
+
 	return name
 }

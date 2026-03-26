@@ -1,19 +1,20 @@
-package collector
+package collector_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestEnvCollector_ExactMatch(t *testing.T) {
-	c := &EnvCollector{
+	c := &collector.EnvCollector{
 		ExactMatches:   []string{"GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY"},
-		SuffixPatterns: DefaultSuffixPatterns,
-		environFunc: func() []string {
+		SuffixPatterns: collector.DefaultSuffixPatterns,
+		EnvironFunc: func() []string {
 			return []string{
 				"GITHUB_TOKEN=ghp_secret123",
 				"HOME=/home/user",
@@ -25,17 +26,17 @@ func TestEnvCollector_ExactMatch(t *testing.T) {
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	require.Len(t, facts.Env.SuspiciousVars, 1)
 	assert.Equal(t, "GITHUB_TOKEN", facts.Env.SuspiciousVars[0].Name)
 	assert.Equal(t, "exact:GITHUB_TOKEN", facts.Env.SuspiciousVars[0].Pattern)
 }
 
 func TestEnvCollector_SuffixMatch(t *testing.T) {
-	c := &EnvCollector{
-		ExactMatches:   DefaultExactMatches,
-		SuffixPatterns: DefaultSuffixPatterns,
-		environFunc: func() []string {
+	c := &collector.EnvCollector{
+		ExactMatches:   collector.DefaultExactMatches,
+		SuffixPatterns: collector.DefaultSuffixPatterns,
+		EnvironFunc: func() []string {
 			return []string{
 				"MY_APP_API_KEY=abc123",
 				"STRIPE_PRIVATE_KEY=sk_test_xxx",
@@ -47,7 +48,7 @@ func TestEnvCollector_SuffixMatch(t *testing.T) {
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	require.Len(t, facts.Env.SuspiciousVars, 2)
 
 	byName := map[string]schema.SuspiciousVar{}
@@ -60,10 +61,10 @@ func TestEnvCollector_SuffixMatch(t *testing.T) {
 }
 
 func TestEnvCollector_NoMatches(t *testing.T) {
-	c := &EnvCollector{
-		ExactMatches:   DefaultExactMatches,
-		SuffixPatterns: DefaultSuffixPatterns,
-		environFunc: func() []string {
+	c := &collector.EnvCollector{
+		ExactMatches:   collector.DefaultExactMatches,
+		SuffixPatterns: collector.DefaultSuffixPatterns,
+		EnvironFunc: func() []string {
 			return []string{
 				"HOME=/home/user",
 				"EDITOR=vim",
@@ -75,15 +76,15 @@ func TestEnvCollector_NoMatches(t *testing.T) {
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Empty(t, facts.Env.SuspiciousVars)
 }
 
 func TestEnvCollector_NeverStoresValues(t *testing.T) {
-	c := &EnvCollector{
+	c := &collector.EnvCollector{
 		ExactMatches:   []string{"GITHUB_TOKEN"},
 		SuffixPatterns: []string{"_PASSWORD"},
-		environFunc: func() []string {
+		EnvironFunc: func() []string {
 			return []string{
 				"GITHUB_TOKEN=super_secret_value",
 				"DB_PASSWORD=hunter2",

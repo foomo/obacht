@@ -1,4 +1,4 @@
-package collector
+package collector_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,11 +22,11 @@ func TestShellCollector_Zsh(t *testing.T) {
 	t.Setenv("SHELL", "/bin/zsh")
 	t.Setenv("HISTCONTROL", "ignorespace")
 
-	c := &ShellCollector{homeDir: home}
+	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, "/bin/zsh", facts.Shell.Shell)
 	assert.Equal(t, histPath, facts.Shell.HistoryFile)
 	assert.Equal(t, "0600", facts.Shell.HistoryFileMode)
@@ -41,11 +42,11 @@ func TestShellCollector_Bash(t *testing.T) {
 	t.Setenv("SHELL", "/bin/bash")
 	t.Setenv("HISTCONTROL", "")
 
-	c := &ShellCollector{homeDir: home}
+	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, "/bin/bash", facts.Shell.Shell)
 	assert.Equal(t, histPath, facts.Shell.HistoryFile)
 	assert.Equal(t, "0644", facts.Shell.HistoryFileMode)
@@ -62,11 +63,11 @@ func TestShellCollector_Fish(t *testing.T) {
 	t.Setenv("SHELL", "/usr/bin/fish")
 	t.Setenv("HISTCONTROL", "")
 
-	c := &ShellCollector{homeDir: home}
+	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
+	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, histPath, facts.Shell.HistoryFile)
 }
 
@@ -75,12 +76,12 @@ func TestShellCollector_NoHistoryFile(t *testing.T) {
 
 	t.Setenv("SHELL", "/bin/zsh")
 
-	c := &ShellCollector{homeDir: home}
+	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
 	result := c.Collect(context.Background(), &facts)
 
-	assert.Equal(t, StatusOK, result.Status)
-	assert.Equal(t, "", facts.Shell.HistoryFileMode)
+	assert.Equal(t, collector.StatusOK, result.Status)
+	assert.Empty(t, facts.Shell.HistoryFileMode)
 }
 
 func TestHistoryFilePath(t *testing.T) {
@@ -95,9 +96,9 @@ func TestHistoryFilePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(filepath.Base(tt.shell), func(t *testing.T) {
-			result := historyFilePath(tt.shell, "/home/user")
+			result := collector.ExportHistoryFilePath(tt.shell, "/home/user")
 			if tt.expected == "" {
-				assert.Equal(t, "", result)
+				assert.Empty(t, result)
 			} else {
 				assert.Equal(t, filepath.Join("/home/user", tt.expected), result)
 			}

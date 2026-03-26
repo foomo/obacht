@@ -81,6 +81,7 @@ func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorRes
 	if err != nil {
 		return nil, fmt.Errorf("marshaling facts: %w", err)
 	}
+
 	factsPath := filepath.Join(tmpDir, "facts.json")
 	if err := os.WriteFile(factsPath, factsJSON, 0600); err != nil {
 		return nil, fmt.Errorf("writing facts file: %w", err)
@@ -129,11 +130,15 @@ func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorRes
 			case collector.StatusSkipped:
 				cr.Status = schema.StatusSkip
 				results = append(results, cr)
+
 				continue
 			case collector.StatusError:
 				cr.Status = schema.StatusError
 				results = append(results, cr)
+
 				continue
+			case collector.StatusOK:
+				// Collector succeeded; fall through to OPA evaluation below.
 			}
 		}
 
@@ -148,6 +153,7 @@ func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorRes
 	}
 
 	scanResult := schema.NewScanResult(results)
+
 	return &scanResult, nil
 }
 
@@ -159,6 +165,7 @@ func parseOPAFindings(data []byte) ([]opaFinding, error) {
 	}
 
 	var findings []opaFinding
+
 	for _, r := range out.Result {
 		for _, expr := range r.Expressions {
 			for _, category := range expr.Value {
@@ -166,6 +173,7 @@ func parseOPAFindings(data []byte) ([]opaFinding, error) {
 			}
 		}
 	}
+
 	return findings, nil
 }
 
@@ -175,5 +183,6 @@ func buildCategoryStatusMap(results []collector.Result) map[string]collector.Col
 	for _, r := range results {
 		m[r.Name] = r.Status
 	}
+
 	return m
 }

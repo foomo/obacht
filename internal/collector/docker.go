@@ -6,25 +6,26 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"slices"
 
 	"github.com/franklinkim/bouncer/pkg/schema"
 )
 
 // DockerCollector gathers facts about the Docker installation and socket.
 type DockerCollector struct {
-	// homeDir overrides the user's home directory (unused currently but kept
+	// HomeDir overrides the user's home directory (unused currently but kept
 	// for consistency with other collectors). When empty, os.UserHomeDir is used.
-	homeDir string
-	// socketPath overrides the default Docker socket path for testing.
-	socketPath string
-	// lookPath overrides exec.LookPath for testing.
-	lookPath func(string) (string, error)
-	// lookupGroup overrides user.LookupGroup for testing.
-	lookupGroup func(string) (*user.Group, error)
-	// currentUser overrides user.Current for testing.
-	currentUser func() (*user.User, error)
-	// groupIds overrides u.GroupIds for testing.
-	groupIds func(*user.User) ([]string, error)
+	HomeDir string
+	// SocketPath overrides the default Docker socket path for testing.
+	SocketPath string
+	// LookPath overrides exec.LookPath for testing.
+	LookPath func(string) (string, error)
+	// LookupGroup overrides user.LookupGroup for testing.
+	LookupGroup func(string) (*user.Group, error)
+	// CurrentUser overrides user.Current for testing.
+	CurrentUser func() (*user.User, error)
+	// GroupIds overrides u.GroupIds for testing.
+	GroupIds func(*user.User) ([]string, error)
 }
 
 // NewDockerCollector returns a DockerCollector that uses system defaults.
@@ -40,7 +41,7 @@ func (c *DockerCollector) Name() string {
 // Collect populates facts.Docker with information about Docker installation,
 // socket permissions, and group membership.
 func (c *DockerCollector) Collect(ctx context.Context, facts *schema.Facts) Result {
-	lookPath := c.lookPath
+	lookPath := c.LookPath
 	if lookPath == nil {
 		lookPath = exec.LookPath
 	}
@@ -51,12 +52,14 @@ func (c *DockerCollector) Collect(ctx context.Context, facts *schema.Facts) Resu
 		facts.Docker = schema.DockerFacts{
 			Installed: false,
 		}
+
 		return Result{Name: c.Name(), Status: StatusSkipped}
 	}
+
 	facts.Docker.Installed = true
 
 	// Check Docker socket.
-	sockPath := c.socketPath
+	sockPath := c.SocketPath
 	if sockPath == "" {
 		sockPath = "/var/run/docker.sock"
 	}
@@ -75,7 +78,7 @@ func (c *DockerCollector) Collect(ctx context.Context, facts *schema.Facts) Resu
 
 // isUserInDockerGroup checks whether the current user is a member of the "docker" group.
 func (c *DockerCollector) isUserInDockerGroup() bool {
-	lookupGroup := c.lookupGroup
+	lookupGroup := c.LookupGroup
 	if lookupGroup == nil {
 		lookupGroup = user.LookupGroup
 	}
@@ -85,7 +88,7 @@ func (c *DockerCollector) isUserInDockerGroup() bool {
 		return false // group doesn't exist
 	}
 
-	currentUser := c.currentUser
+	currentUser := c.CurrentUser
 	if currentUser == nil {
 		currentUser = user.Current
 	}
@@ -95,7 +98,7 @@ func (c *DockerCollector) isUserInDockerGroup() bool {
 		return false
 	}
 
-	groupIds := c.groupIds
+	groupIds := c.GroupIds
 	if groupIds == nil {
 		groupIds = func(u *user.User) ([]string, error) {
 			return u.GroupIds()
@@ -107,11 +110,5 @@ func (c *DockerCollector) isUserInDockerGroup() bool {
 		return false
 	}
 
-	for _, gid := range gids {
-		if gid == grp.Gid {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(gids, grp.Gid)
 }
