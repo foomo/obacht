@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -91,7 +90,7 @@ func filterRules(rules []schema.Rule, cats map[string]bool) []schema.Rule {
 }
 
 func runScan(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
+	ctx := cmd.Context()
 
 	// Step 1: Preflight check for OPA.
 	if err := preflight.CheckOPA(ctx); err != nil {

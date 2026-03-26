@@ -16,9 +16,30 @@ type Facts struct {
 
 // OSFacts contains operating system information.
 type OSFacts struct {
-	OS       string `json:"os"`
-	Arch     string `json:"arch"`
-	Hostname string `json:"hostname"`
+	OS                        string `json:"os"`
+	Arch                      string `json:"arch"`
+	Hostname                  string `json:"hostname"`
+	SIPEnabled                bool   `json:"sip_enabled"`
+	FileVaultEnabled          bool   `json:"filevault_enabled"`
+	FirewallEnabled           bool   `json:"firewall_enabled"`
+	StealthModeEnabled        bool   `json:"stealth_mode_enabled"`
+	GatekeeperEnabled         bool   `json:"gatekeeper_enabled"`
+	AutoLoginDisabled         bool   `json:"auto_login_disabled"`
+	GuestAccountDisabled      bool   `json:"guest_account_disabled"`
+	ScreenLockTimeoutSecs     int    `json:"screen_lock_timeout_seconds"`
+	OSAutoUpdateEnabled       bool   `json:"os_auto_update_enabled"`
+	AppAutoUpdateEnabled      bool   `json:"app_auto_update_enabled"`
+	RSREnabled                bool   `json:"rsr_enabled"`
+	UserIsStandardAccount     bool   `json:"user_is_standard_account"`
+	ScreenSharingDisabled     bool   `json:"screen_sharing_disabled"`
+	InternetSharingDisabled   bool   `json:"internet_sharing_disabled"`
+	PrinterSharingDisabled    bool   `json:"printer_sharing_disabled"`
+	RemoteAppleEventsDisabled bool   `json:"remote_apple_events_disabled"`
+	AirdropSetting            string `json:"airdrop_setting"`
+	RosettaInstalled          bool   `json:"rosetta_installed"`
+	EDRDeployed               bool   `json:"edr_deployed"`
+	LegacyKextsBlocked        bool   `json:"legacy_kexts_blocked"`
+	MDMEnrolled               bool   `json:"mdm_enrolled"`
 }
 
 // SSHFacts contains SSH configuration and key information.

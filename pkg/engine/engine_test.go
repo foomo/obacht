@@ -15,7 +15,9 @@ import (
 
 var testPolicy = []byte(`package bouncer.test
 
-findings[f] {
+import rego.v1
+
+findings contains f if {
     input.ssh.directory_mode != "0700"
     f := {"rule_id": "SSH002", "evidence": sprintf("~/.ssh has mode %s", [input.ssh.directory_mode])}
 }

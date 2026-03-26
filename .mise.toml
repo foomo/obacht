@@ -9,3 +9,15 @@ regal = "0.39.0"
 lefthook = "2.1.4"
 # https://mise-tools.jdx.dev/tools/golangci-lint
 golangci-lint = "2.11.4"
+
+[tasks."opa:fmt"]
+description = "format opa files"
+run = "opa fmt -w ./policies"
+
+[tasks."opa:lint"]
+description = "lint opa files"
+run = "regal lint ./policies"
+
+[tasks."opa:fix"]
+description = "lint opa files"
+run = "regal fix ./policies"
