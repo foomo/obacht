@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/franklinkim/bouncer/internal/collector"
@@ -14,7 +13,7 @@ func TestToolsCollector_Collect(t *testing.T) {
 	c := collector.NewToolsCollector()
 	facts := schema.NewFacts()
 
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	require.NoError(t, result.Error)
 	assert.Equal(t, collector.StatusOK, result.Status)
@@ -54,7 +53,7 @@ func TestToolsCollector_Structure(t *testing.T) {
 	c := &collector.ToolsCollector{Runner: runner}
 	facts := schema.NewFacts()
 
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 

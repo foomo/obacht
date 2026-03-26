@@ -1,8 +1,6 @@
 package engine_test
 
 import (
-	"context"
-	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,17 +32,7 @@ var testRules = []schema.Rule{
 	},
 }
 
-func skipIfNoOPA(t *testing.T) {
-	t.Helper()
-
-	if _, err := exec.LookPath("opa"); err != nil {
-		t.Skip("opa not found in PATH, skipping test")
-	}
-}
-
 func TestEvaluate_Fail(t *testing.T) {
-	skipIfNoOPA(t)
-
 	eng, err := engine.NewEngine([][]byte{testPolicy}, testRules)
 	require.NoError(t, err)
 
@@ -58,7 +46,7 @@ func TestEvaluate_Fail(t *testing.T) {
 		{Name: "ssh", Status: collector.StatusOK},
 	}
 
-	result, err := eng.Evaluate(context.Background(), &facts, collectorResults)
+	result, err := eng.Evaluate(t.Context(), &facts, collectorResults)
 	require.NoError(t, err)
 	require.Len(t, result.Results, 1)
 
@@ -70,8 +58,6 @@ func TestEvaluate_Fail(t *testing.T) {
 }
 
 func TestEvaluate_Pass(t *testing.T) {
-	skipIfNoOPA(t)
-
 	eng, err := engine.NewEngine([][]byte{testPolicy}, testRules)
 	require.NoError(t, err)
 
@@ -85,7 +71,7 @@ func TestEvaluate_Pass(t *testing.T) {
 		{Name: "ssh", Status: collector.StatusOK},
 	}
 
-	result, err := eng.Evaluate(context.Background(), &facts, collectorResults)
+	result, err := eng.Evaluate(t.Context(), &facts, collectorResults)
 	require.NoError(t, err)
 	require.Len(t, result.Results, 1)
 
@@ -96,8 +82,6 @@ func TestEvaluate_Pass(t *testing.T) {
 }
 
 func TestEvaluate_CollectorSkipped(t *testing.T) {
-	skipIfNoOPA(t)
-
 	eng, err := engine.NewEngine([][]byte{testPolicy}, testRules)
 	require.NoError(t, err)
 
@@ -111,7 +95,7 @@ func TestEvaluate_CollectorSkipped(t *testing.T) {
 		{Name: "ssh", Status: collector.StatusSkipped},
 	}
 
-	result, err := eng.Evaluate(context.Background(), &facts, collectorResults)
+	result, err := eng.Evaluate(t.Context(), &facts, collectorResults)
 	require.NoError(t, err)
 	require.Len(t, result.Results, 1)
 

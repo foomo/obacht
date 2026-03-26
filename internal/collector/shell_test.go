@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,7 +23,7 @@ func TestShellCollector_Zsh(t *testing.T) {
 
 	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, "/bin/zsh", facts.Shell.Shell)
@@ -44,7 +43,7 @@ func TestShellCollector_Bash(t *testing.T) {
 
 	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, "/bin/bash", facts.Shell.Shell)
@@ -65,7 +64,7 @@ func TestShellCollector_Fish(t *testing.T) {
 
 	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Equal(t, histPath, facts.Shell.HistoryFile)
@@ -78,7 +77,7 @@ func TestShellCollector_NoHistoryFile(t *testing.T) {
 
 	c := &collector.ShellCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Empty(t, facts.Shell.HistoryFileMode)

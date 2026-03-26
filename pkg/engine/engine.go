@@ -4,9 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
+
+	"github.com/open-policy-agent/opa/v1/rego"
 
 	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/pkg/schema"
@@ -18,92 +17,51 @@ type opaFinding struct {
 	Evidence string `json:"evidence"`
 }
 
-// opaOutput represents the top-level OPA JSON output structure.
-type opaOutput struct {
-	Result []struct {
-		Expressions []struct {
-			Value map[string]struct {
-				Findings []opaFinding `json:"findings"`
-			} `json:"value"`
-		} `json:"expressions"`
-	} `json:"result"`
-}
-
-// CommandRunner abstracts command execution for testability.
-type CommandRunner func(ctx context.Context, name string, args ...string) ([]byte, error)
-
-// defaultRunner executes a command using os/exec.
-func defaultRunner(ctx context.Context, name string, args ...string) ([]byte, error) {
-	return exec.CommandContext(ctx, name, args...).CombinedOutput()
-}
-
-// Engine evaluates Rego policies against facts via the OPA binary.
+// Engine evaluates Rego policies against facts via the embedded OPA library.
 type Engine struct {
 	Policies [][]byte
 	Rules    []schema.Rule
-	OPAPath  string
-	RunCmd   CommandRunner
 }
 
-// NewEngine creates an Engine, locating the OPA binary in PATH.
+// NewEngine creates an Engine with the given policies and rules.
 func NewEngine(policies [][]byte, rules []schema.Rule) (*Engine, error) {
-	opaPath, err := exec.LookPath("opa")
-	if err != nil {
-		return nil, fmt.Errorf("opa not found in PATH: %w", err)
-	}
-
 	return &Engine{
 		Policies: policies,
 		Rules:    rules,
-		OPAPath:  opaPath,
-		RunCmd:   defaultRunner,
 	}, nil
 }
 
-// Evaluate runs OPA against the provided facts and returns a ScanResult.
+// Evaluate runs the embedded OPA engine against the provided facts and returns a ScanResult.
 func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorResults []collector.Result) (*schema.ScanResult, error) {
-	tmpDir, err := os.MkdirTemp("", "bouncer-opa-*")
-	if err != nil {
-		return nil, fmt.Errorf("creating temp dir: %w", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// Write policy files.
-	for i, policy := range e.Policies {
-		policyPath := filepath.Join(tmpDir, fmt.Sprintf("policy_%d.rego", i))
-		if err := os.WriteFile(policyPath, policy, 0600); err != nil {
-			return nil, fmt.Errorf("writing policy file: %w", err)
-		}
-	}
-
-	// Write facts as JSON input.
+	// Marshal facts to generic interface{} for OPA input.
 	factsJSON, err := json.Marshal(facts)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling facts: %w", err)
 	}
 
-	factsPath := filepath.Join(tmpDir, "facts.json")
-	if err := os.WriteFile(factsPath, factsJSON, 0600); err != nil {
-		return nil, fmt.Errorf("writing facts file: %w", err)
+	var input any
+	if err := json.Unmarshal(factsJSON, &input); err != nil {
+		return nil, fmt.Errorf("unmarshaling facts to interface: %w", err)
 	}
 
-	// Run OPA eval.
-	out, err := e.RunCmd(ctx, e.OPAPath,
-		"eval",
-		"-d", tmpDir,
-		"-i", factsPath,
-		"--format", "json",
-		"data.bouncer",
-	)
-	if err != nil {
-		return nil, fmt.Errorf("running opa eval: %w\noutput: %s", err, string(out))
+	// Build rego options.
+	opts := []func(*rego.Rego){
+		rego.Query("data.bouncer"),
+		rego.Input(input),
 	}
 
-	// Parse OPA output.
-	findings, err := parseOPAFindings(out)
-	if err != nil {
-		return nil, fmt.Errorf("parsing opa output: %w", err)
+	for i, p := range e.Policies {
+		opts = append(opts, rego.Module(fmt.Sprintf("policy_%d.rego", i), string(p)))
 	}
+
+	// Evaluate policies.
+	rs, err := rego.New(opts...).Eval(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("evaluating rego: %w", err)
+	}
+
+	// Extract findings from the result set.
+	findings := extractFindings(rs)
 
 	// Build category -> collector status map.
 	categoryStatus := buildCategoryStatusMap(collectorResults)
@@ -157,24 +115,61 @@ func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorRes
 	return &scanResult, nil
 }
 
-// parseOPAFindings extracts all findings from OPA JSON output.
-func parseOPAFindings(data []byte) ([]opaFinding, error) {
-	var out opaOutput
-	if err := json.Unmarshal(data, &out); err != nil {
-		return nil, fmt.Errorf("unmarshaling opa output: %w", err)
-	}
-
+// extractFindings walks the OPA result set and collects all findings.
+func extractFindings(rs rego.ResultSet) []opaFinding {
 	var findings []opaFinding
 
-	for _, r := range out.Result {
-		for _, expr := range r.Expressions {
-			for _, category := range expr.Value {
-				findings = append(findings, category.Findings...)
+	if len(rs) == 0 {
+		return findings
+	}
+
+	for _, result := range rs {
+		for _, expr := range result.Expressions {
+			categories, ok := expr.Value.(map[string]any)
+			if !ok {
+				continue
+			}
+
+			for _, catVal := range categories {
+				catMap, ok := catVal.(map[string]any)
+				if !ok {
+					continue
+				}
+
+				rawFindings, ok := catMap["findings"]
+				if !ok {
+					continue
+				}
+
+				findingsSlice, ok := rawFindings.([]any)
+				if !ok {
+					continue
+				}
+
+				for _, rf := range findingsSlice {
+					fm, ok := rf.(map[string]any)
+					if !ok {
+						continue
+					}
+
+					f := opaFinding{}
+					if v, ok := fm["rule_id"].(string); ok {
+						f.RuleID = v
+					}
+
+					if v, ok := fm["evidence"].(string); ok {
+						f.Evidence = v
+					}
+
+					if f.RuleID != "" {
+						findings = append(findings, f)
+					}
+				}
 			}
 		}
 	}
 
-	return findings, nil
+	return findings
 }
 
 // buildCategoryStatusMap creates a map from collector name (category) to its status.

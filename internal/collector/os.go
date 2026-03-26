@@ -25,7 +25,7 @@ func (c *OSCollector) Name() string {
 }
 
 // Collect populates facts.OS with operating system information.
-func (c *OSCollector) Collect(_ context.Context, facts *schema.Facts) Result {
+func (c *OSCollector) Collect(ctx context.Context, facts *schema.Facts) Result {
 	facts.OS.OS = runtime.GOOS
 	facts.OS.Arch = runtime.GOARCH
 
@@ -33,71 +33,76 @@ func (c *OSCollector) Collect(_ context.Context, facts *schema.Facts) Result {
 	facts.OS.Hostname = hostname
 
 	if runtime.GOOS == "darwin" {
-		c.collectDarwin(facts)
+		c.collectDarwin(ctx, facts)
 	}
 
 	return Result{Name: c.Name(), Status: StatusOK}
 }
 
 // collectDarwin gathers macOS-specific security facts.
-func (c *OSCollector) collectDarwin(facts *schema.Facts) {
-	facts.OS.SIPEnabled = cmdContains("csrutil", []string{"status"}, "enabled")
-	facts.OS.FileVaultEnabled = cmdContains("fdesetup", []string{"status"}, "On")
-	facts.OS.FirewallEnabled = cmdContains("/usr/libexec/ApplicationFirewall/socketfilterfw", []string{"--getglobalstate"}, "enabled")
-	facts.OS.StealthModeEnabled = cmdContains("/usr/libexec/ApplicationFirewall/socketfilterfw", []string{"--getstealthmode"}, "enabled")
-	facts.OS.GatekeeperEnabled = cmdContains("spctl", []string{"--status"}, "enabled")
-	facts.OS.AutoLoginDisabled = !cmdContains("defaults", []string{"read", "/Library/Preferences/com.apple.loginwindow", "autoLoginUser"}, "")
-	facts.OS.GuestAccountDisabled = cmdContains("defaults", []string{"read", "/Library/Preferences/com.apple.loginwindow", "GuestEnabled"}, "0")
-	facts.OS.ScreenLockTimeoutSecs = readScreenLockTimeout()
-	facts.OS.OSAutoUpdateEnabled = cmdContains("defaults", []string{"read", "/Library/Preferences/com.apple.SoftwareUpdate", "AutomaticallyInstallMacOSUpdates"}, "1")
-	facts.OS.AppAutoUpdateEnabled = cmdContains("defaults", []string{"read", "/Library/Preferences/com.apple.commerce", "AutoUpdate"}, "1")
-	facts.OS.RSREnabled = cmdContains("defaults", []string{"read", "/Library/Preferences/com.apple.SoftwareUpdate", "ConfigDataInstall"}, "1")
-	facts.OS.UserIsStandardAccount = !cmdContains("groups", nil, "admin")
-	facts.OS.ScreenSharingDisabled = !cmdContains("launchctl", []string{"list", "com.apple.screensharing"}, "")
-	facts.OS.InternetSharingDisabled = !cmdContains("defaults", []string{"read", "/Library/Preferences/SystemConfiguration/com.apple.nat", "Enabled"}, "1")
-	facts.OS.PrinterSharingDisabled = !cmdContains("cupsctl", nil, "share_printers=0")
-	facts.OS.RemoteAppleEventsDisabled = !cmdContains("launchctl", []string{"list", "com.apple.AEServer"}, "")
-	facts.OS.AirdropSetting = readAirdropSetting()
-	facts.OS.RosettaInstalled = cmdSucceeds("pgrep", []string{"-q", "oahd"})
-	facts.OS.EDRDeployed = detectEDR()
-	facts.OS.LegacyKextsBlocked = !cmdContains("kmutil", []string{"showloaded", "--list-only"}, "com.apple")
-	facts.OS.MDMEnrolled = cmdContains("profiles", []string{"status", "-type", "enrollment"}, "MDM enrollment: Yes")
+func (c *OSCollector) collectDarwin(ctx context.Context, facts *schema.Facts) {
+	facts.OS.SIPEnabled = cmdContains(ctx, "csrutil", []string{"status"}, "enabled")
+	facts.OS.FileVaultEnabled = cmdContains(ctx, "fdesetup", []string{"status"}, "On")
+	facts.OS.FirewallEnabled = cmdContains(ctx, "/usr/libexec/ApplicationFirewall/socketfilterfw", []string{"--getglobalstate"}, "enabled")
+	facts.OS.StealthModeEnabled = cmdContains(ctx, "/usr/libexec/ApplicationFirewall/socketfilterfw", []string{"--getstealthmode"}, "enabled")
+	facts.OS.GatekeeperEnabled = cmdContains(ctx, "spctl", []string{"--status"}, "enabled")
+	facts.OS.AutoLoginDisabled = !cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.loginwindow", "autoLoginUser"}, "")
+	facts.OS.GuestAccountDisabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.loginwindow", "GuestEnabled"}, "0")
+	facts.OS.ScreenLockTimeoutSecs = readScreenLockTimeout(ctx)
+	facts.OS.OSAutoUpdateEnabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.SoftwareUpdate", "AutomaticallyInstallMacOSUpdates"}, "1")
+	facts.OS.AppAutoUpdateEnabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.commerce", "AutoUpdate"}, "1")
+	facts.OS.RSREnabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.SoftwareUpdate", "ConfigDataInstall"}, "1")
+	facts.OS.UserIsStandardAccount = !cmdContains(ctx, "groups", nil, "admin")
+	facts.OS.ScreenSharingDisabled = !cmdContains(ctx, "launchctl", []string{"list", "com.apple.screensharing"}, "")
+	facts.OS.InternetSharingDisabled = !cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/SystemConfiguration/com.apple.nat", "Enabled"}, "1")
+	facts.OS.PrinterSharingDisabled = !cmdContains(ctx, "cupsctl", nil, "share_printers=0")
+	facts.OS.RemoteAppleEventsDisabled = !cmdContains(ctx, "launchctl", []string{"list", "com.apple.AEServer"}, "")
+	facts.OS.AirdropSetting = readAirdropSetting(ctx)
+	facts.OS.RosettaInstalled = cmdSucceeds(ctx, "pgrep", []string{"-q", "oahd"})
+	facts.OS.EDRDeployed = detectEDR(ctx)
+	facts.OS.LegacyKextsBlocked = !cmdContains(ctx, "kmutil", []string{"showloaded", "--list-only"}, "com.apple")
+	facts.OS.MDMEnrolled = cmdContains(ctx, "profiles", []string{"status", "-type", "enrollment"}, "MDM enrollment: Yes")
 }
 
 // cmdContains runs a command and checks if stdout contains a substring.
-func cmdContains(name string, args []string, substr string) bool {
-	out, err := exec.Command(name, args...).CombinedOutput()
+func cmdContains(ctx context.Context, name string, args []string, substr string) bool {
+	out, err := exec.CommandContext(ctx, name, args...).CombinedOutput()
 	if err != nil {
 		return false
 	}
+
 	if substr == "" {
 		return true
 	}
+
 	return strings.Contains(string(out), substr)
 }
 
 // cmdSucceeds returns true if the command exits with status 0.
-func cmdSucceeds(name string, args []string) bool {
-	return exec.Command(name, args...).Run() == nil
+func cmdSucceeds(ctx context.Context, name string, args []string) bool {
+	return exec.CommandContext(ctx, name, args...).Run() == nil
 }
 
-func readScreenLockTimeout() int {
-	out, err := exec.Command("defaults", "-currentHost", "read", "com.apple.screensaver", "idleTime").CombinedOutput()
+func readScreenLockTimeout(ctx context.Context) int {
+	out, err := exec.CommandContext(ctx, "defaults", "-currentHost", "read", "com.apple.screensaver", "idleTime").CombinedOutput()
 	if err != nil {
 		return 0
 	}
+
 	val, err := strconv.Atoi(strings.TrimSpace(string(out)))
 	if err != nil {
 		return 0
 	}
+
 	return val
 }
 
-func readAirdropSetting() string {
-	out, err := exec.Command("defaults", "read", "com.apple.sharingd", "DiscoverableMode").CombinedOutput()
+func readAirdropSetting(ctx context.Context) string {
+	out, err := exec.CommandContext(ctx, "defaults", "read", "com.apple.sharingd", "DiscoverableMode").CombinedOutput()
 	if err != nil {
 		return "off"
 	}
+
 	switch strings.TrimSpace(string(out)) {
 	case "Everyone":
 		return "everyone"
@@ -108,7 +113,7 @@ func readAirdropSetting() string {
 	}
 }
 
-func detectEDR() bool {
+func detectEDR(ctx context.Context) bool {
 	knownAgents := []string{
 		"com.crowdstrike.falcon",
 		"com.sentinelone",
@@ -116,9 +121,10 @@ func detectEDR() bool {
 		"com.microsoft.wdav",
 	}
 	for _, agent := range knownAgents {
-		if cmdSucceeds("launchctl", []string{"list", agent}) {
+		if cmdSucceeds(ctx, "launchctl", []string{"list", agent}) {
 			return true
 		}
 	}
+
 	return false
 }

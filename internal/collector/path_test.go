@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestPathCollector_Collect(t *testing.T) {
 	c := collector.NewPathCollector()
 	facts := schema.NewFacts()
 
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	require.NoError(t, result.Error)
 	assert.Equal(t, collector.StatusOK, result.Status)
@@ -59,7 +58,7 @@ func TestPathCollector_EmptyPATH(t *testing.T) {
 	c := collector.NewPathCollector()
 	facts := schema.NewFacts()
 
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Empty(t, facts.Path.Dirs)

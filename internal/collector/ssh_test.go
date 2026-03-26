@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +16,7 @@ func TestSSHCollector_NoSSHDir(t *testing.T) {
 
 	c := &collector.SSHCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, "ssh", result.Name)
 	assert.Equal(t, collector.StatusSkipped, result.Status)
@@ -40,7 +39,7 @@ func TestSSHCollector_WithKeys(t *testing.T) {
 
 	c := &collector.SSHCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	require.NoError(t, result.Error)
@@ -73,7 +72,7 @@ func TestSSHCollector_NoConfig(t *testing.T) {
 
 	c := &collector.SSHCollector{HomeDir: home}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.True(t, facts.SSH.DirectoryExists)

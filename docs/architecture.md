@@ -4,8 +4,7 @@
 
 ```
 collectors (concurrent) → Facts JSON (schema v1.0)
-  → write to temp dir alongside .rego files
-  → single `opa eval` invocation
+  → embedded OPA evaluation with Rego policies
   → parse findings → diff against rule list
   → CheckResult per rule → reporter
 ```
@@ -20,8 +19,7 @@ Type-safe data contracts:
 
 ### `pkg/engine`
 OPA evaluation engine:
-- Writes policies and facts to a secure temp directory
-- Invokes external OPA binary
+- Evaluates policies in-process via embedded OPA library
 - Maps findings back to rules
 
 ## Internal Packages

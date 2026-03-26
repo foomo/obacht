@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -56,7 +55,7 @@ func TestGitCollector_Collect(t *testing.T) {
 	// Note: this test only works when git is actually on PATH.
 	// If git is not installed, the collector returns StatusSkipped
 	// before it even calls the runner.
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	if result.Status == collector.StatusSkipped {
 		t.Skip("git not found on PATH, skipping integration-style test")
@@ -82,7 +81,7 @@ func TestGitCollector_VersionError(t *testing.T) {
 	c := &collector.GitCollector{Runner: runner}
 	facts := schema.NewFacts()
 
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	if result.Status == collector.StatusSkipped {
 		t.Skip("git not found on PATH, skipping test")

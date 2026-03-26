@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"errors"
 	"os"
 	"os/user"
@@ -23,7 +22,7 @@ func TestDockerCollector_NotInstalled(t *testing.T) {
 		},
 	}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, "docker", result.Name)
 	assert.Equal(t, collector.StatusSkipped, result.Status)
@@ -46,7 +45,7 @@ func TestDockerCollector_WithSocket(t *testing.T) {
 		},
 	}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.True(t, facts.Docker.Installed)
@@ -66,7 +65,7 @@ func TestDockerCollector_NoSocket(t *testing.T) {
 		},
 	}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.True(t, facts.Docker.Installed)
@@ -95,7 +94,7 @@ func TestDockerCollector_UserInGroup(t *testing.T) {
 		},
 	}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.True(t, facts.Docker.UserInGroup)
@@ -118,7 +117,7 @@ func TestDockerCollector_UserNotInGroup(t *testing.T) {
 		},
 	}
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.False(t, facts.Docker.UserInGroup)

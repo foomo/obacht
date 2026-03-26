@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 func TestOSCollector(t *testing.T) {
 	c := collector.NewOSCollector()
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, "os", result.Name)
 	assert.Equal(t, collector.StatusOK, result.Status)

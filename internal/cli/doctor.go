@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"regexp"
 	"runtime"
 	"strings"
 
@@ -14,8 +12,6 @@ import (
 
 	"github.com/franklinkim/bouncer/internal/collector"
 )
-
-var versionRegexpForDoctor = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
@@ -39,26 +35,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	fmt.Println(boldStyle.Render("=============="))
 	fmt.Println()
 
-	// --- OPA Binary ---
-	fmt.Println(boldStyle.Render("OPA Binary"))
-
-	opaPath, err := exec.LookPath("opa")
-	if err != nil {
-		fmt.Printf("  Status: %s not installed\n", redStyle.Render("\u2717"))
-		fmt.Println("  Hint:   install with \"brew install opa\" or \"mise install opa\"")
-	} else {
-		fmt.Printf("  Status: %s installed\n", greenStyle.Render("\u2713"))
-		fmt.Printf("  Path:   %s\n", opaPath)
-
-		out, err := exec.CommandContext(ctx, opaPath, "version").CombinedOutput()
-		if err == nil {
-			version := parseOPAVersionString(string(out))
-			if version != "" {
-				fmt.Printf("  Version: %s\n", version)
-			}
-		}
-	}
-
+	// --- OPA Engine ---
+	fmt.Println(boldStyle.Render("OPA Engine"))
+	fmt.Printf("  Status: %s embedded\n", greenStyle.Render("\u2713"))
 	fmt.Println()
 
 	// --- Policies ---
@@ -149,21 +128,4 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Go:      %s\n", runtime.Version())
 
 	return nil
-}
-
-// parseOPAVersionString extracts the version number from opa version output.
-func parseOPAVersionString(output string) string {
-	for line := range strings.SplitSeq(output, "\n") {
-		line = strings.TrimSpace(line)
-		if after, ok := strings.CutPrefix(line, "Version:"); ok {
-			return strings.TrimSpace(after)
-		}
-		// Some versions output just the version number on a line with digits.
-		matches := versionRegexpForDoctor.FindString(line)
-		if matches != "" {
-			return matches
-		}
-	}
-
-	return ""
 }

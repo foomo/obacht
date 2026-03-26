@@ -20,16 +20,6 @@ brew install franklinkim/tap/bouncer
 go install github.com/franklinkim/bouncer/cmd/bouncer@latest
 ```
 
-## Prerequisites
-
-Bouncer requires the [Open Policy Agent (OPA)](https://www.openpolicyagent.org/) binary:
-
-```bash
-brew install opa
-# or
-mise install opa
-```
-
 Verify your setup:
 
 ```bash

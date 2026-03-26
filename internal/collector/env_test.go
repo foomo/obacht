@@ -1,7 +1,6 @@
 package collector_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/franklinkim/bouncer/internal/collector"
@@ -24,7 +23,7 @@ func TestEnvCollector_ExactMatch(t *testing.T) {
 	}
 
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	require.Len(t, facts.Env.SuspiciousVars, 1)
@@ -46,7 +45,7 @@ func TestEnvCollector_SuffixMatch(t *testing.T) {
 	}
 
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	require.Len(t, facts.Env.SuspiciousVars, 2)
@@ -74,7 +73,7 @@ func TestEnvCollector_NoMatches(t *testing.T) {
 	}
 
 	facts := schema.NewFacts()
-	result := c.Collect(context.Background(), &facts)
+	result := c.Collect(t.Context(), &facts)
 
 	assert.Equal(t, collector.StatusOK, result.Status)
 	assert.Empty(t, facts.Env.SuspiciousVars)
@@ -93,7 +92,7 @@ func TestEnvCollector_NeverStoresValues(t *testing.T) {
 	}
 
 	facts := schema.NewFacts()
-	c.Collect(context.Background(), &facts)
+	c.Collect(t.Context(), &facts)
 
 	for _, v := range facts.Env.SuspiciousVars {
 		assert.NotContains(t, v.Name, "super_secret_value")

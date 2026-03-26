@@ -15,7 +15,7 @@ features:
   - title: 13 Built-in Rules
     details: Checks across SSH, Git, Docker, Kubernetes, environment variables, shell, tools, PATH, and OS categories
   - title: OPA-Powered
-    details: Uses Open Policy Agent with Rego policies for flexible, extensible security evaluation
+    details: Uses an embedded Open Policy Agent engine with Rego policies for flexible, extensible security evaluation — no external dependencies required
   - title: Extensible
     details: Add custom rules via --rules-dir with your own Rego policies and YAML metadata
 ---

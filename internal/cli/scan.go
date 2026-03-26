@@ -11,7 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/franklinkim/bouncer/internal/collector"
-	"github.com/franklinkim/bouncer/internal/preflight"
 	"github.com/franklinkim/bouncer/internal/reporter"
 	"github.com/franklinkim/bouncer/pkg/engine"
 	"github.com/franklinkim/bouncer/pkg/schema"
@@ -92,13 +91,7 @@ func filterRules(rules []schema.Rule, cats map[string]bool) []schema.Rule {
 func runScan(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// Step 1: Preflight check for OPA.
-	if err := preflight.CheckOPA(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "preflight: %v\n", err)
-		os.Exit(Error)
-	}
-
-	// Step 2: Load built-in rules from embedded policies.
+	// Step 1: Load built-in rules from embedded policies.
 	rules, err := loadEmbeddedRules()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loading embedded rules: %v\n", err)
