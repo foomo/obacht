@@ -1,23 +1,26 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
 	"github.com/franklinkim/bouncer/internal/reporter"
 	"github.com/franklinkim/bouncer/pkg/engine"
 	"github.com/franklinkim/bouncer/pkg/schema"
-	"github.com/franklinkim/bouncer/policies"
+	"github.com/franklinkim/bouncer/rules"
 )
 
 var (
 	category string
+	severity string
 )
 
 var scanCmd = &cobra.Command{
@@ -28,6 +31,7 @@ var scanCmd = &cobra.Command{
 
 func init() {
 	scanCmd.Flags().StringVar(&category, "category", "", "comma-separated list of categories to scan (e.g. ssh,git,env)")
+	scanCmd.Flags().StringVar(&severity, "severity", "", "comma-separated list of severities to include (critical,high,warn,info)")
 	rootCmd.AddCommand(scanCmd)
 }
 
@@ -53,6 +57,28 @@ func parseCategories() map[string]bool {
 	return cats
 }
 
+// parseSeverities splits the comma-separated severity flag into a set.
+func parseSeverities() map[schema.Severity]bool {
+	if severity == "" {
+		return nil
+	}
+
+	sevs := make(map[schema.Severity]bool)
+
+	for s := range strings.SplitSeq(severity, ",") {
+		s = strings.TrimSpace(s)
+		if s != "" {
+			sevs[schema.Severity(s)] = true
+		}
+	}
+
+	if len(sevs) == 0 {
+		return nil
+	}
+
+	return sevs
+}
+
 // filterRuleFiles returns rule files with only the rules matching the category set.
 func filterRuleFiles(ruleFiles []schema.RulesFile, cats map[string]bool) []schema.RulesFile {
 	if cats == nil {
@@ -66,6 +92,35 @@ func filterRuleFiles(ruleFiles []schema.RulesFile, cats map[string]bool) []schem
 
 		for _, r := range rf.Rules {
 			if cats[r.Category] {
+				rules = append(rules, r)
+			}
+		}
+
+		if len(rules) > 0 {
+			filtered = append(filtered, schema.RulesFile{
+				Input:  rf.Input,
+				Policy: rf.Policy,
+				Rules:  rules,
+			})
+		}
+	}
+
+	return filtered
+}
+
+// filterRuleFilesBySeverity returns rule files with only the rules matching the severity set.
+func filterRuleFilesBySeverity(ruleFiles []schema.RulesFile, sevs map[schema.Severity]bool) []schema.RulesFile {
+	if sevs == nil {
+		return ruleFiles
+	}
+
+	var filtered []schema.RulesFile
+
+	for _, rf := range ruleFiles {
+		var rules []schema.Rule
+
+		for _, r := range rf.Rules {
+			if sevs[r.Severity] {
 				rules = append(rules, r)
 			}
 		}
@@ -107,11 +162,39 @@ func runScan(cmd *cobra.Command, args []string) error {
 	cats := parseCategories()
 	ruleFiles = filterRuleFiles(ruleFiles, cats)
 
+	// Filter by severity.
+	sevs := parseSeverities()
+	ruleFiles = filterRuleFilesBySeverity(ruleFiles, sevs)
+
 	// Evaluate all rule files.
-	scanResult, err := engine.Evaluate(ctx, ruleFiles)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", err)
-		os.Exit(Error)
+	var scanResult *schema.ScanResult
+
+	if format == "pretty" {
+		// Run scan with animated progress display.
+		model := newScanModel(ctx, ruleFiles)
+		p := tea.NewProgram(model, tea.WithOutput(os.Stderr), tea.WithInput(os.Stdin))
+		model.SetProgram(p)
+
+		finalModel, err := p.Run()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "running progress: %v\n", err)
+			os.Exit(Error)
+		}
+
+		m := finalModel.(*scanModel)
+		if m.err != nil {
+			fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", m.err)
+			os.Exit(Error)
+		}
+
+		scanResult = m.result
+	} else {
+		var err error
+		scanResult, err = engine.Evaluate(ctx, ruleFiles)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", err)
+			os.Exit(Error)
+		}
 	}
 
 	// Report results.
@@ -133,7 +216,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 	var ruleFiles []schema.RulesFile
 
-	err := fs.WalkDir(policies.Embedded, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(rules.Embedded, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -142,7 +225,7 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 			return nil
 		}
 
-		data, err := policies.Embedded.ReadFile(path)
+		data, err := rules.Embedded.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", path, err)
 		}
@@ -150,6 +233,17 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 		var rf schema.RulesFile
 		if err := yaml.Unmarshal(data, &rf); err != nil {
 			return fmt.Errorf("parsing %s: %w", path, err)
+		}
+
+		// Resolve input from inputs/<name>.sh if not set inline.
+		if rf.Input == "" {
+			baseName := strings.TrimSuffix(filepath.Base(path), ".yaml")
+			input, err := resolveInputFromFS(rules.Embedded, "inputs", baseName)
+			if err != nil {
+				return fmt.Errorf("resolving input for %s: %w", path, err)
+			}
+
+			rf.Input = input
 		}
 
 		ruleFiles = append(ruleFiles, rf)
@@ -161,13 +255,16 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 }
 
 // loadExternalRuleFiles loads rule YAML files from an external directory.
-// It also resolves policy file references (non-inline rego) relative to the directory.
+// The directory is expected to contain a policies/ subdirectory with YAML files
+// and an optional inputs/ subdirectory with shell scripts.
 func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 	var ruleFiles []schema.RulesFile
 
-	entries, err := os.ReadDir(dir)
+	policiesDir := filepath.Join(dir, "policies")
+
+	entries, err := os.ReadDir(policiesDir)
 	if err != nil {
-		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
+		return nil, fmt.Errorf("reading directory %s: %w (expected policies/ subdirectory in %s)", policiesDir, err, dir)
 	}
 
 	for _, entry := range entries {
@@ -175,7 +272,7 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 			continue
 		}
 
-		path := filepath.Join(dir, entry.Name())
+		path := filepath.Join(policiesDir, entry.Name())
 
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -187,14 +284,25 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 			return nil, fmt.Errorf("parsing %s: %w", path, err)
 		}
 
+		// Resolve input from inputs/<name>.sh if not set inline.
+		if rf.Input == "" {
+			baseName := strings.TrimSuffix(entry.Name(), ".yaml")
+			input, err := resolveInputFromDir(dir, baseName)
+			if err != nil {
+				return nil, fmt.Errorf("resolving input for %s: %w", path, err)
+			}
+
+			rf.Input = input
+		}
+
 		// Resolve policy file references.
-		rf.Policy, err = resolvePolicy(dir, rf.Policy)
+		rf.Policy, err = resolvePolicy(policiesDir, rf.Policy)
 		if err != nil {
 			return nil, fmt.Errorf("resolving policy in %s: %w", path, err)
 		}
 
 		for i := range rf.Rules {
-			rf.Rules[i].Policy, err = resolvePolicy(dir, rf.Rules[i].Policy)
+			rf.Rules[i].Policy, err = resolvePolicy(policiesDir, rf.Rules[i].Policy)
 			if err != nil {
 				return nil, fmt.Errorf("resolving policy for rule %s in %s: %w", rf.Rules[i].ID, path, err)
 			}
@@ -216,6 +324,39 @@ func resolvePolicy(dir, policy string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(dir, policy))
 	if err != nil {
 		return "", fmt.Errorf("reading rego file %s: %w", policy, err)
+	}
+
+	return string(data), nil
+}
+
+// resolveInputFromFS checks for inputs/<name>.sh in the given FS and returns
+// its content if found. Returns empty string if not found.
+func resolveInputFromFS(fsys fs.FS, inputsDir, baseName string) (string, error) {
+	scriptPath := inputsDir + "/" + baseName + ".sh"
+
+	data, err := fs.ReadFile(fsys, scriptPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", nil
+		}
+
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+// resolveInputFromDir checks for <dir>/inputs/<name>.sh on the real filesystem.
+func resolveInputFromDir(dir, baseName string) (string, error) {
+	scriptPath := filepath.Join(dir, "inputs", baseName+".sh")
+
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+
+		return "", err
 	}
 
 	return string(data), nil

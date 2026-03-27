@@ -1,0 +1,37 @@
+rules:
+  - id: KUB001
+    title: Kubeconfig has weak permissions
+    severity: high
+    category: kube
+    description: |
+      The kubeconfig file contains cluster credentials and should
+      only be readable by the owner. Permissions wider than 0600
+      may expose cluster access tokens.
+    remediation: "Run: chmod 600 ~/.kube/config"
+    policy: |
+      findings contains f if {
+        input.config_exists
+        input.config_mode != "0600"
+        f := {
+          "rule_id": "KUB001",
+          "evidence": sprintf("~/.kube/config has mode %s (expected 0600)", [input.config_mode]),
+        }
+      }
+  - id: KUB002
+    title: Production Kubernetes context is active
+    severity: warn
+    category: kube
+    description: |
+      A Kubernetes context pointing to a production cluster is
+      configured. Accidental kubectl commands could affect
+      production workloads.
+    remediation: "Switch context: kubectl config use-context <dev-context>"
+    policy: |
+      findings contains f if {
+        ctx := input.contexts[_]
+        contains(lower(ctx.name), "prod")
+        f := {
+          "rule_id": "KUB002",
+          "evidence": sprintf("Production context found: %s (cluster: %s)", [ctx.name, ctx.cluster]),
+        }
+      }

@@ -25,23 +25,61 @@ type ruleGroup struct {
 }
 
 // Evaluate runs input scripts and evaluates rego policies for the given rule files.
-func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile) (*schema.ScanResult, error) {
+// An optional ProgressFunc callback receives events as each rule group starts and completes.
+func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile, onProgress ...ProgressFunc) (*schema.ScanResult, error) {
 	groups := buildRuleGroups(ruleFiles)
+
+	var notify ProgressFunc
+	if len(onProgress) > 0 && onProgress[0] != nil {
+		notify = onProgress[0]
+	}
 
 	var results []schema.CheckResult
 
-	for _, g := range groups {
+	for i, g := range groups {
+		cat := groupCategory(g)
+
+		if notify != nil {
+			notify(ProgressEvent{
+				Kind:       EventGroupStart,
+				Category:   cat,
+				RuleCount:  len(g.Rules),
+				GroupIndex: i,
+				GroupTotal: len(groups),
+			})
+		}
+
 		groupResults, err := evaluateGroup(ctx, g)
 		if err != nil {
 			return nil, err
 		}
 
 		results = append(results, groupResults...)
+
+		if notify != nil {
+			notify(ProgressEvent{
+				Kind:       EventGroupDone,
+				Category:   cat,
+				RuleCount:  len(g.Rules),
+				Results:    groupResults,
+				GroupIndex: i,
+				GroupTotal: len(groups),
+			})
+		}
 	}
 
 	scanResult := schema.NewScanResult(results)
 
 	return &scanResult, nil
+}
+
+// groupCategory returns the category from the first rule in the group.
+func groupCategory(g ruleGroup) string {
+	if len(g.Rules) > 0 {
+		return g.Rules[0].Category
+	}
+
+	return "unknown"
 }
 
 // buildRuleGroups organizes rules into groups that share the same input and policy.

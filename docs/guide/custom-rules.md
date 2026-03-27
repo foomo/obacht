@@ -1,12 +1,29 @@
 # Custom Rules
 
-Bouncer supports loading custom rules from an external directory using the `--rules-dir` flag. Each rule is defined in a YAML file with metadata, an input script, and a Rego policy.
+Bouncer supports loading custom rules from an external directory using the `--rules-dir` flag. Each rule is defined in a YAML file with metadata and a Rego policy. Input scripts can be defined inline or in separate files.
+
+## Directory Structure
+
+The `--rules-dir` flag expects a directory with the following layout:
+
+```
+my-rules/
+  policies/            # YAML rule files
+    filesystem.yaml
+    custom_ssh.yaml
+  inputs/              # Optional shell scripts for collecting facts
+    filesystem.sh      # Used by filesystem.yaml (matched by name)
+    custom_ssh.sh      # Used by custom_ssh.yaml
+```
+
+- **`policies/`** — Contains YAML rule files and optional `.rego` policy files
+- **`inputs/`** — Contains shell scripts that collect system facts. Scripts are matched to YAML files by name (e.g., `inputs/foo.sh` provides input for `policies/foo.yaml`)
 
 ## Rule File Format
 
 A rule file is a YAML file with:
 
-- **`input`** (file-level) — A shell script that collects facts and outputs JSON to stdout, shared by all rules in the file
+- **`input`** (file-level, optional) — An inline shell script that collects facts and outputs JSON to stdout, shared by all rules in the file. If omitted, bouncer looks for a matching script in the `inputs/` directory.
 - **`rules`** — A list of rules, each with metadata and its own Rego policy
 
 Each rule contains:
@@ -87,9 +104,23 @@ rules:
       }
 ```
 
+### Example: Input from file
+
+Instead of inlining the input script, place it in `inputs/<name>.sh`:
+
+```
+my-rules/
+  policies/
+    ssh_check.yaml     # No inline input: field
+  inputs/
+    ssh_check.sh       # Automatically used as input
+```
+
+The script in `inputs/ssh_check.sh` is used as the file-level input for `policies/ssh_check.yaml`. If the YAML also has an inline `input:` field, the inline value takes precedence.
+
 ### Policy file reference
 
-Instead of inline Rego, you can reference a `.rego` file in the same directory:
+Instead of inline Rego, you can reference a `.rego` file in the `policies/` directory:
 
 ```yaml
 rules:
@@ -111,7 +142,7 @@ Input scripts are shell commands that:
 3. Exit with code 0 on success
 
 If the script fails (non-zero exit), the rule is marked as `error`.
-If no input script is defined, the rule is marked as `skip`.
+If no input script is defined (neither inline nor in `inputs/`), the rule is marked as `skip`.
 
 ### Tips
 
@@ -128,13 +159,4 @@ External rules with the same ID as built-in rules will override them. This allow
 
 ```bash
 bouncer scan --rules-dir ./my-rules
-```
-
-## Directory Structure
-
-```
-my-rules/
-  filesystem.yaml    # Self-contained rule file
-  custom_ssh.yaml    # Shared input with per-rule policy
-  custom.rego        # Optional external rego file
 ```

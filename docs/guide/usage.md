@@ -13,7 +13,8 @@ bouncer scan [flags]
 **Flags:**
 - `--format <pretty|json>` — Output format (default: pretty)
 - `--category <categories>` — Comma-separated list of categories to scan
-- `--rules-dir <path>` — Load additional rules from a directory
+- `--severity <severities>` — Comma-separated list of severities to include (critical, high, warn, info)
+- `--rules-dir <path>` — Load additional rules from a directory (expects `policies/` and `inputs/` subdirectories)
 - `--verbose` — Enable verbose output
 
 **Exit Codes:**
