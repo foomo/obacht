@@ -27,7 +27,7 @@ func runExplain(cmd *cobra.Command, args []string) error {
 	ruleID := args[0]
 
 	// Load built-in rules from embedded policies.
-	rules, err := loadEmbeddedRules()
+	ruleFiles, err := loadEmbeddedRuleFiles()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loading embedded rules: %v\n", err)
 		os.Exit(Error)
@@ -35,21 +35,27 @@ func runExplain(cmd *cobra.Command, args []string) error {
 
 	// Optionally load and merge external rules from --rules-dir.
 	if rulesDir != "" {
-		extRules, _, err := loadExternalRules(rulesDir)
+		extRuleFiles, err := loadExternalRuleFiles(rulesDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "loading external rules: %v\n", err)
 			os.Exit(Error)
 		}
 
-		rules = mergeRules(rules, extRules)
+		ruleFiles = mergeRuleFiles(ruleFiles, extRuleFiles)
 	}
 
 	// Find the rule matching the given ID (case-insensitive).
 	var found *schema.Rule
 
-	for i := range rules {
-		if strings.EqualFold(rules[i].ID, ruleID) {
-			found = &rules[i]
+	for _, rf := range ruleFiles {
+		for i := range rf.Rules {
+			if strings.EqualFold(rf.Rules[i].ID, ruleID) {
+				found = &rf.Rules[i]
+				break
+			}
+		}
+
+		if found != nil {
 			break
 		}
 	}

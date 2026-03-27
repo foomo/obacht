@@ -2,12 +2,11 @@ package engine
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/open-policy-agent/opa/v1/rego"
 
-	"github.com/franklinkim/bouncer/internal/collector"
+	"github.com/franklinkim/bouncer/internal/runner"
 	"github.com/franklinkim/bouncer/pkg/schema"
 )
 
@@ -17,87 +16,145 @@ type opaFinding struct {
 	Evidence string `json:"evidence"`
 }
 
-// Engine evaluates Rego policies against facts via the embedded OPA library.
-type Engine struct {
-	Policies [][]byte
-	Rules    []schema.Rule
+// ruleGroup is a set of rules that share the same input script and policy.
+type ruleGroup struct {
+	Input  string
+	Policy string
+	Rules  []schema.Rule
 }
 
-// NewEngine creates an Engine with the given policies and rules.
-func NewEngine(policies [][]byte, rules []schema.Rule) (*Engine, error) {
-	return &Engine{
-		Policies: policies,
-		Rules:    rules,
-	}, nil
+// Evaluate runs input scripts and evaluates rego policies for the given rule files.
+func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile) (*schema.ScanResult, error) {
+	groups := buildRuleGroups(ruleFiles)
+
+	var results []schema.CheckResult
+
+	for _, g := range groups {
+		groupResults, err := evaluateGroup(ctx, g)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, groupResults...)
+	}
+
+	scanResult := schema.NewScanResult(results)
+
+	return &scanResult, nil
 }
 
-// Evaluate runs the embedded OPA engine against the provided facts and returns a ScanResult.
-func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorResults []collector.Result) (*schema.ScanResult, error) {
-	// Marshal facts to generic interface{} for OPA input.
-	factsJSON, err := json.Marshal(facts)
+// buildRuleGroups organizes rules into groups that share the same input and policy.
+func buildRuleGroups(ruleFiles []schema.RulesFile) []ruleGroup {
+	var groups []ruleGroup
+
+	for _, rf := range ruleFiles {
+		// Collect rules that use the file-level input/policy.
+		var fileLevelRules []schema.Rule
+
+		for _, rule := range rf.Rules {
+			if rule.Input != "" || rule.Policy != "" {
+				// Rule has its own input/policy — it's its own group.
+				groups = append(groups, ruleGroup{
+					Input:  resolveField(rule.Input, rf.Input),
+					Policy: resolveField(rule.Policy, rf.Policy),
+					Rules:  []schema.Rule{rule},
+				})
+			} else {
+				fileLevelRules = append(fileLevelRules, rule)
+			}
+		}
+
+		if len(fileLevelRules) > 0 {
+			groups = append(groups, ruleGroup{
+				Input:  rf.Input,
+				Policy: rf.Policy,
+				Rules:  fileLevelRules,
+			})
+		}
+	}
+
+	return groups
+}
+
+// resolveField returns the rule-level value if set, otherwise the file-level fallback.
+func resolveField(ruleLevel, fileLevel string) string {
+	if ruleLevel != "" {
+		return ruleLevel
+	}
+
+	return fileLevel
+}
+
+// evaluateGroup runs the input script and rego policy for a group of rules.
+func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, error) {
+	// Run input script.
+	inputResult := runner.RunInput(ctx, g.Input)
+
+	results := make([]schema.CheckResult, 0, len(g.Rules))
+
+	// If input was skipped or errored, mark all rules accordingly.
+	if inputResult.Status != runner.StatusOK {
+		for _, rule := range g.Rules {
+			cr := schema.CheckResult{
+				RuleID:      rule.ID,
+				Title:       rule.Title,
+				Severity:    rule.Severity,
+				Category:    rule.Category,
+				Remediation: rule.Remediation,
+			}
+
+			switch inputResult.Status {
+			case runner.StatusSkipped:
+				cr.Status = schema.StatusSkip
+			case runner.StatusError:
+				cr.Status = schema.StatusError
+				if inputResult.Error != nil {
+					cr.Evidence = inputResult.Error.Error()
+				}
+			}
+
+			results = append(results, cr)
+		}
+
+		return results, nil
+	}
+
+	// Evaluate rego policy.
+	if g.Policy == "" {
+		// No policy — all rules pass by default.
+		for _, rule := range g.Rules {
+			results = append(results, schema.CheckResult{
+				RuleID:      rule.ID,
+				Title:       rule.Title,
+				Severity:    rule.Severity,
+				Category:    rule.Category,
+				Remediation: rule.Remediation,
+				Status:      schema.StatusPass,
+			})
+		}
+
+		return results, nil
+	}
+
+	findings, err := evalRego(ctx, g.Policy, inputResult.Data)
 	if err != nil {
-		return nil, fmt.Errorf("marshaling facts: %w", err)
+		return nil, err
 	}
 
-	var input any
-	if err := json.Unmarshal(factsJSON, &input); err != nil {
-		return nil, fmt.Errorf("unmarshaling facts to interface: %w", err)
-	}
-
-	// Build rego options.
-	opts := []func(*rego.Rego){
-		rego.Query("data.bouncer"),
-		rego.Input(input),
-	}
-
-	for i, p := range e.Policies {
-		opts = append(opts, rego.Module(fmt.Sprintf("policy_%d.rego", i), string(p)))
-	}
-
-	// Evaluate policies.
-	rs, err := rego.New(opts...).Eval(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("evaluating rego: %w", err)
-	}
-
-	// Extract findings from the result set.
-	findings := extractFindings(rs)
-
-	// Build category -> collector status map.
-	categoryStatus := buildCategoryStatusMap(collectorResults)
-
-	// Build finding set keyed by rule_id for quick lookup.
+	// Build finding set keyed by rule_id.
 	findingMap := make(map[string]opaFinding)
 	for _, f := range findings {
 		findingMap[f.RuleID] = f
 	}
 
 	// Build check results.
-	results := make([]schema.CheckResult, 0, len(e.Rules))
-	for _, rule := range e.Rules {
+	for _, rule := range g.Rules {
 		cr := schema.CheckResult{
 			RuleID:      rule.ID,
 			Title:       rule.Title,
 			Severity:    rule.Severity,
 			Category:    rule.Category,
 			Remediation: rule.Remediation,
-		}
-
-		if status, ok := categoryStatus[rule.Category]; ok {
-			switch status {
-			case collector.StatusSkipped:
-				cr.Status = schema.StatusSkip
-				results = append(results, cr)
-
-				continue
-			case collector.StatusError:
-				cr.Status = schema.StatusError
-				results = append(results, cr)
-
-				continue
-			case collector.StatusOK:
-				// Collector succeeded; fall through to OPA evaluation below.
-			}
 		}
 
 		if f, found := findingMap[rule.ID]; found {
@@ -110,9 +167,23 @@ func (e *Engine) Evaluate(ctx context.Context, facts *schema.Facts, collectorRes
 		results = append(results, cr)
 	}
 
-	scanResult := schema.NewScanResult(results)
+	return results, nil
+}
 
-	return &scanResult, nil
+// evalRego evaluates a rego policy string against the given input data.
+func evalRego(ctx context.Context, policy string, input any) ([]opaFinding, error) {
+	opts := []func(*rego.Rego){
+		rego.Query("data.bouncer"),
+		rego.Input(input),
+		rego.Module("policy.rego", policy),
+	}
+
+	rs, err := rego.New(opts...).Eval(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("evaluating rego: %w", err)
+	}
+
+	return extractFindings(rs), nil
 }
 
 // extractFindings walks the OPA result set and collects all findings.
@@ -170,14 +241,4 @@ func extractFindings(rs rego.ResultSet) []opaFinding {
 	}
 
 	return findings
-}
-
-// buildCategoryStatusMap creates a map from collector name (category) to its status.
-func buildCategoryStatusMap(results []collector.Result) map[string]collector.CollectorStatus {
-	m := make(map[string]collector.CollectorStatus, len(results))
-	for _, r := range results {
-		m[r.Name] = r.Status
-	}
-
-	return m
 }

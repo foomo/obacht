@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/franklinkim/bouncer/internal/collector"
 	"github.com/franklinkim/bouncer/internal/reporter"
 	"github.com/franklinkim/bouncer/pkg/engine"
 	"github.com/franklinkim/bouncer/pkg/schema"
@@ -54,34 +53,29 @@ func parseCategories() map[string]bool {
 	return cats
 }
 
-// filterCollectors returns only collectors whose Name matches the category set.
-func filterCollectors(collectors []collector.Collector, cats map[string]bool) []collector.Collector {
+// filterRuleFiles returns rule files with only the rules matching the category set.
+func filterRuleFiles(ruleFiles []schema.RulesFile, cats map[string]bool) []schema.RulesFile {
 	if cats == nil {
-		return collectors
+		return ruleFiles
 	}
 
-	var filtered []collector.Collector
+	var filtered []schema.RulesFile
 
-	for _, c := range collectors {
-		if cats[c.Name()] {
-			filtered = append(filtered, c)
+	for _, rf := range ruleFiles {
+		var rules []schema.Rule
+
+		for _, r := range rf.Rules {
+			if cats[r.Category] {
+				rules = append(rules, r)
+			}
 		}
-	}
 
-	return filtered
-}
-
-// filterRules returns only rules whose Category matches the category set.
-func filterRules(rules []schema.Rule, cats map[string]bool) []schema.Rule {
-	if cats == nil {
-		return rules
-	}
-
-	var filtered []schema.Rule
-
-	for _, r := range rules {
-		if cats[r.Category] {
-			filtered = append(filtered, r)
+		if len(rules) > 0 {
+			filtered = append(filtered, schema.RulesFile{
+				Input:  rf.Input,
+				Policy: rf.Policy,
+				Rules:  rules,
+			})
 		}
 	}
 
@@ -91,81 +85,43 @@ func filterRules(rules []schema.Rule, cats map[string]bool) []schema.Rule {
 func runScan(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// Step 1: Load built-in rules from embedded policies.
-	rules, err := loadEmbeddedRules()
+	// Load built-in rule files from embedded policies.
+	ruleFiles, err := loadEmbeddedRuleFiles()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loading embedded rules: %v\n", err)
 		os.Exit(Error)
 	}
 
-	// Step 3: Load Rego files from embedded policies.
-	regoFiles, err := loadEmbeddedRego()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "loading embedded rego: %v\n", err)
-		os.Exit(Error)
-	}
-
-	// Step 4: Optionally load external rules from --rules-dir.
+	// Optionally load external rule files from --rules-dir.
 	if rulesDir != "" {
-		extRules, extRego, err := loadExternalRules(rulesDir)
+		extRuleFiles, err := loadExternalRuleFiles(rulesDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "loading external rules: %v\n", err)
 			os.Exit(Error)
 		}
 
-		rules = mergeRules(rules, extRules)
-
-		regoFiles = append(regoFiles, extRego...)
+		ruleFiles = mergeRuleFiles(ruleFiles, extRuleFiles)
 	}
 
-	// Step 5: Parse category filter.
+	// Filter by category.
 	cats := parseCategories()
+	ruleFiles = filterRuleFiles(ruleFiles, cats)
 
-	// Step 6: Filter rules by category.
-	rules = filterRules(rules, cats)
-
-	// Step 7: Create collectors.
-	collectors := []collector.Collector{
-		collector.NewSSHCollector(),
-		collector.NewGitCollector(),
-		collector.NewDockerCollector(),
-		collector.NewKubeCollector(),
-		collector.NewEnvCollector(),
-		collector.NewShellCollector(),
-		collector.NewToolsCollector(),
-		collector.NewPathCollector(),
-		collector.NewOSCollector(),
-	}
-	collectors = filterCollectors(collectors, cats)
-
-	// Step 8: Run CollectAll.
-	facts, collectorResults, err := collector.CollectAll(ctx, collectors)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "collecting facts: %v\n", err)
-		os.Exit(Error)
-	}
-
-	// Step 7: Create engine and evaluate.
-	eng, err := engine.NewEngine(regoFiles, rules)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating engine: %v\n", err)
-		os.Exit(Error)
-	}
-
-	scanResult, err := eng.Evaluate(ctx, facts, collectorResults)
+	// Evaluate all rule files.
+	scanResult, err := engine.Evaluate(ctx, ruleFiles)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", err)
 		os.Exit(Error)
 	}
 
-	// Step 8: Report results.
+	// Report results.
 	rep := reporter.ForFormat(format)
 	if err := rep.Report(os.Stdout, scanResult); err != nil {
 		fmt.Fprintf(os.Stderr, "reporting results: %v\n", err)
 		os.Exit(Error)
 	}
 
-	// Step 9: Exit with appropriate code.
+	// Exit with appropriate code.
 	if scanResult.Summary.Failed > 0 {
 		os.Exit(Findings)
 	}
@@ -173,11 +129,11 @@ func runScan(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// loadEmbeddedRules reads all YAML rule files from the embedded filesystem.
-func loadEmbeddedRules() ([]schema.Rule, error) {
-	var rules []schema.Rule
+// loadEmbeddedRuleFiles reads all YAML rule files from the embedded filesystem.
+func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
+	var ruleFiles []schema.RulesFile
 
-	err := fs.WalkDir(policies.Embedded, "rules", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(policies.Embedded, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -196,115 +152,119 @@ func loadEmbeddedRules() ([]schema.Rule, error) {
 			return fmt.Errorf("parsing %s: %w", path, err)
 		}
 
-		rules = append(rules, rf.Rules...)
+		ruleFiles = append(ruleFiles, rf)
 
 		return nil
 	})
 
-	return rules, err
+	return ruleFiles, err
 }
 
-// loadEmbeddedRego reads all .rego files (excluding tests) from the embedded filesystem.
-func loadEmbeddedRego() ([][]byte, error) {
-	var regoFiles [][]byte
-
-	err := fs.WalkDir(policies.Embedded, "rego", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() || !strings.HasSuffix(path, ".rego") || strings.HasSuffix(path, "_test.rego") {
-			return nil
-		}
-
-		data, err := policies.Embedded.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("reading %s: %w", path, err)
-		}
-
-		regoFiles = append(regoFiles, data)
-
-		return nil
-	})
-
-	return regoFiles, err
-}
-
-// loadExternalRules loads rule YAML and Rego files from an external directory.
-func loadExternalRules(dir string) ([]schema.Rule, [][]byte, error) {
-	var (
-		rules     []schema.Rule
-		regoFiles [][]byte
-	)
+// loadExternalRuleFiles loads rule YAML files from an external directory.
+// It also resolves policy file references (non-inline rego) relative to the directory.
+func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
+	var ruleFiles []schema.RulesFile
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading directory %s: %w", dir, err)
+		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
 			continue
 		}
 
 		path := filepath.Join(dir, entry.Name())
 
-		switch {
-		case strings.HasSuffix(entry.Name(), ".yaml"):
-			data, err := os.ReadFile(path)
-			if err != nil {
-				return nil, nil, fmt.Errorf("reading %s: %w", path, err)
-			}
-
-			var rf schema.RulesFile
-			if err := yaml.Unmarshal(data, &rf); err != nil {
-				return nil, nil, fmt.Errorf("parsing %s: %w", path, err)
-			}
-
-			rules = append(rules, rf.Rules...)
-
-		case strings.HasSuffix(entry.Name(), ".rego") && !strings.HasSuffix(entry.Name(), "_test.rego"):
-			data, err := os.ReadFile(path)
-			if err != nil {
-				return nil, nil, fmt.Errorf("reading %s: %w", path, err)
-			}
-
-			regoFiles = append(regoFiles, data)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("reading %s: %w", path, err)
 		}
+
+		var rf schema.RulesFile
+		if err := yaml.Unmarshal(data, &rf); err != nil {
+			return nil, fmt.Errorf("parsing %s: %w", path, err)
+		}
+
+		// Resolve policy file references.
+		rf.Policy, err = resolvePolicy(dir, rf.Policy)
+		if err != nil {
+			return nil, fmt.Errorf("resolving policy in %s: %w", path, err)
+		}
+
+		for i := range rf.Rules {
+			rf.Rules[i].Policy, err = resolvePolicy(dir, rf.Rules[i].Policy)
+			if err != nil {
+				return nil, fmt.Errorf("resolving policy for rule %s in %s: %w", rf.Rules[i].ID, path, err)
+			}
+		}
+
+		ruleFiles = append(ruleFiles, rf)
 	}
 
-	return rules, regoFiles, nil
+	return ruleFiles, nil
 }
 
-// mergeRules merges external rules into built-in rules. External rules with the
-// same ID override built-in ones.
-func mergeRules(builtIn, external []schema.Rule) []schema.Rule {
-	// Build a map of external rules by ID.
-	extMap := make(map[string]schema.Rule, len(external))
-	for _, r := range external {
-		extMap[r.ID] = r
+// resolvePolicy checks if the policy value is a file reference (ends with .rego)
+// and reads the file content. Otherwise returns the value as-is (inline rego).
+func resolvePolicy(dir, policy string) (string, error) {
+	if policy == "" || !strings.HasSuffix(policy, ".rego") {
+		return policy, nil
 	}
 
-	// Override built-in rules where external ones exist.
-	merged := make([]schema.Rule, 0, len(builtIn)+len(external))
-	seen := make(map[string]bool)
-
-	for _, r := range builtIn {
-		if ext, ok := extMap[r.ID]; ok {
-			merged = append(merged, ext)
-		} else {
-			merged = append(merged, r)
-		}
-
-		seen[r.ID] = true
+	data, err := os.ReadFile(filepath.Join(dir, policy))
+	if err != nil {
+		return "", fmt.Errorf("reading rego file %s: %w", policy, err)
 	}
 
-	// Append external rules that are entirely new.
-	for _, r := range external {
-		if !seen[r.ID] {
-			merged = append(merged, r)
+	return string(data), nil
+}
+
+// mergeRuleFiles merges external rule files into built-in ones.
+// External rules with the same ID override built-in ones.
+func mergeRuleFiles(builtIn, external []schema.RulesFile) []schema.RulesFile {
+	// Build a map of all external rules by ID.
+	extMap := make(map[string]schema.Rule)
+
+	for _, rf := range external {
+		for _, r := range rf.Rules {
+			extMap[r.ID] = r
 		}
 	}
 
-	return merged
+	// Override built-in rules where external ones have the same ID.
+	for i, rf := range builtIn {
+		for j, r := range rf.Rules {
+			if ext, ok := extMap[r.ID]; ok {
+				builtIn[i].Rules[j] = ext
+
+				delete(extMap, r.ID)
+			}
+		}
+	}
+
+	// Collect remaining external rules (entirely new) into rule files.
+	if len(extMap) > 0 {
+		// Add them as part of the external rule files that define their input/policy.
+		for _, rf := range external {
+			var newRules []schema.Rule
+
+			for _, r := range rf.Rules {
+				if _, ok := extMap[r.ID]; ok {
+					newRules = append(newRules, r)
+				}
+			}
+
+			if len(newRules) > 0 {
+				builtIn = append(builtIn, schema.RulesFile{
+					Input:  rf.Input,
+					Policy: rf.Policy,
+					Rules:  newRules,
+				})
+			}
+		}
+	}
+
+	return builtIn
 }

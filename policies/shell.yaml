@@ -1,0 +1,50 @@
+input: |
+  #!/bin/sh
+  shell="$SHELL"
+  home="$HOME"
+
+  # Determine history file based on shell.
+  hist_file=""
+  case "$(basename "$shell")" in
+    bash) hist_file="$home/.bash_history" ;;
+    zsh)  hist_file="$home/.zsh_history" ;;
+    fish) hist_file="$home/.local/share/fish/fish_history" ;;
+  esac
+
+  hist_mode=""
+  if [ -n "$hist_file" ] && [ -f "$hist_file" ]; then
+    # Resolve symlinks.
+    real_hist=$(readlink -f "$hist_file" 2>/dev/null || echo "$hist_file")
+    hist_mode=$(stat -f '%04Lp' "$real_hist" 2>/dev/null || stat -c '%04a' "$real_hist" 2>/dev/null || echo "")
+    hist_mode="0$hist_mode"
+  fi
+
+  histcontrol="${HISTCONTROL:-}"
+
+  printf '{"shell": "%s", "history_file": "%s", "history_file_mode": "%s", "histcontrol": "%s"}' \
+    "$shell" "$hist_file" "$hist_mode" "$histcontrol"
+
+policy: |
+  package bouncer.shell
+
+  import rego.v1
+
+  findings contains f if {
+    input.history_file_mode != ""
+    input.history_file_mode != "0600"
+    f := {
+      "rule_id": "SHL001",
+      "evidence": sprintf("History file %s has mode %s (expected 0600)", [input.history_file, input.history_file_mode]),
+    }
+  }
+
+rules:
+  - id: SHL001
+    title: Shell history file has weak permissions
+    severity: warn
+    category: shell
+    description: |
+      Shell history files may contain sensitive commands including
+      passwords, tokens, and API keys typed on the command line.
+      They should only be readable by the owner.
+    remediation: "Run: chmod 600 ~/.bash_history ~/.zsh_history"

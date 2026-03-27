@@ -2,5 +2,5 @@ package policies
 
 import "embed"
 
-//go:embed rego/*.rego rules/*.yaml
+//go:embed *.yaml
 var Embedded embed.FS

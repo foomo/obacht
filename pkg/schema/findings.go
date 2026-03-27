@@ -28,11 +28,15 @@ type Rule struct {
 	Category    string   `json:"category" yaml:"category"`
 	Description string   `json:"description" yaml:"description"`
 	Remediation string   `json:"remediation" yaml:"remediation"`
+	Input       string   `json:"input,omitempty" yaml:"input,omitempty"`   // shell script or empty (inherits from RulesFile)
+	Policy      string   `json:"policy,omitempty" yaml:"policy,omitempty"` // inline rego, file path, or empty (inherits from RulesFile)
 }
 
 // RulesFile is the top-level structure for a rules YAML/JSON file.
 type RulesFile struct {
-	Rules []Rule `json:"rules" yaml:"rules"`
+	Input  string `json:"input,omitempty" yaml:"input,omitempty"`   // file-level shell script shared by all rules
+	Policy string `json:"policy,omitempty" yaml:"policy,omitempty"` // file-level rego shared by all rules
+	Rules  []Rule `json:"rules" yaml:"rules"`
 }
 
 // CheckResult is the outcome of evaluating a single rule against collected facts.

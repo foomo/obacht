@@ -1,0 +1,74 @@
+input: |
+  #!/bin/sh
+  # Check if git is installed.
+  if ! command -v git >/dev/null 2>&1; then
+    printf '{"installed": false, "version": "", "credential_helper": "", "signing_enabled": false, "signing_format": ""}'
+    exit 0
+  fi
+
+  version=$(git --version 2>/dev/null | tr -d '\n')
+  config=$(git config --global --list 2>/dev/null || true)
+
+  credential_helper=""
+  signing_enabled=false
+  signing_format=""
+
+  IFS='
+  '
+  for line in $config; do
+    key=$(printf '%s' "$line" | cut -d= -f1 | tr '[:upper:]' '[:lower:]')
+    value=$(printf '%s' "$line" | cut -d= -f2-)
+    case "$key" in
+      credential.helper) credential_helper="$value" ;;
+      commit.gpgsign)
+        case "$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')" in
+          true) signing_enabled=true ;;
+        esac ;;
+      gpg.format) signing_format="$value" ;;
+    esac
+  done
+
+  printf '{"installed": true, "version": "%s", "credential_helper": "%s", "signing_enabled": %s, "signing_format": "%s"}' \
+    "$version" "$credential_helper" "$signing_enabled" "$signing_format"
+
+policy: |
+  package bouncer.git
+
+  import rego.v1
+
+  findings contains f if {
+    input.credential_helper == "store"
+    f := {
+      "rule_id": "GIT001",
+      "evidence": "Git credential helper is set to 'store' which saves passwords in plaintext",
+    }
+  }
+
+  findings contains f if {
+    input.installed
+    not input.signing_enabled
+    f := {
+      "rule_id": "GIT002",
+      "evidence": "Git commit signing is not enabled",
+    }
+  }
+
+rules:
+  - id: GIT001
+    title: Git credential helper stores passwords in plaintext
+    severity: high
+    category: git
+    description: |
+      The 'store' credential helper saves passwords in plaintext
+      in ~/.git-credentials. Use a secure credential helper like
+      'osxkeychain' (macOS), 'manager' (Windows), or 'cache' (Linux).
+    remediation: "Run: git config --global credential.helper osxkeychain"
+  - id: GIT002
+    title: Git commit signing is not enabled
+    severity: warn
+    category: git
+    description: |
+      Commit signing provides cryptographic proof of commit authorship.
+      Without it, anyone with repository access can forge commits
+      under your identity.
+    remediation: "See: https://docs.github.com/en/authentication/managing-commit-signature-verification"

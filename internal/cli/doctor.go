@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
-	"github.com/franklinkim/bouncer/internal/collector"
+	"github.com/franklinkim/bouncer/internal/runner"
 )
 
 var doctorCmd = &cobra.Command{
@@ -29,7 +29,6 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	boldStyle := lipgloss.NewStyle().Bold(true)
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	yellowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 
 	fmt.Println(boldStyle.Render("Bouncer Doctor"))
 	fmt.Println(boldStyle.Render("=============="))
@@ -43,78 +42,74 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// --- Policies ---
 	fmt.Println(boldStyle.Render("Policies"))
 
-	rules, err := loadEmbeddedRules()
+	ruleFiles, err := loadEmbeddedRuleFiles()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "  Error loading rules: %v\n", err)
 	}
 
-	regoFiles, err := loadEmbeddedRego()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  Error loading rego: %v\n", err)
-	}
-
 	if rulesDir != "" {
-		extRules, extRego, err := loadExternalRules(rulesDir)
+		extRuleFiles, err := loadExternalRuleFiles(rulesDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "  Error loading external rules: %v\n", err)
 		} else {
-			rules = mergeRules(rules, extRules)
-
-			regoFiles = append(regoFiles, extRego...)
+			ruleFiles = mergeRuleFiles(ruleFiles, extRuleFiles)
 		}
 	}
 
-	fmt.Printf("  Rules:  %d loaded\n", len(rules))
-	fmt.Printf("  Rego:   %d files\n", len(regoFiles))
+	var (
+		totalRules int
+		ids        []string
+	)
 
-	if len(rules) > 0 {
-		ids := make([]string, len(rules))
-		for i, r := range rules {
-			ids[i] = r.ID
+	for _, rf := range ruleFiles {
+		totalRules += len(rf.Rules)
+		for _, r := range rf.Rules {
+			ids = append(ids, r.ID)
 		}
+	}
 
+	fmt.Printf("  Rules:  %d loaded\n", totalRules)
+	fmt.Printf("  Files:  %d rule files\n", len(ruleFiles))
+
+	if len(ids) > 0 {
 		fmt.Printf("  IDs:    %s\n", strings.Join(ids, ", "))
 	}
 
 	fmt.Println()
 
-	// --- Collectors ---
-	fmt.Println(boldStyle.Render("Collectors"))
+	// --- Input Scripts ---
+	fmt.Println(boldStyle.Render("Input Scripts"))
 
-	collectors := []collector.Collector{
-		collector.NewSSHCollector(),
-		collector.NewGitCollector(),
-		collector.NewDockerCollector(),
-		collector.NewKubeCollector(),
-		collector.NewEnvCollector(),
-		collector.NewShellCollector(),
-		collector.NewToolsCollector(),
-		collector.NewPathCollector(),
-		collector.NewOSCollector(),
-	}
+	// Deduplicate input scripts and test each one.
+	seen := make(map[string]bool)
 
-	_, results, err := collector.CollectAll(ctx, collectors)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  Error running collectors: %v\n", err)
-	} else {
-		for _, r := range results {
+	for _, rf := range ruleFiles {
+		inputs := []string{rf.Input}
+		for _, r := range rf.Rules {
+			if r.Input != "" {
+				inputs = append(inputs, r.Input)
+			}
+		}
+
+		for _, input := range inputs {
+			if input == "" || seen[input] {
+				continue
+			}
+
+			seen[input] = true
+
+			result := runner.RunInput(ctx, input)
+
 			var icon string
 
-			switch r.Status {
-			case collector.StatusOK:
+			switch result.Status {
+			case runner.StatusOK:
 				icon = greenStyle.Render("\u2713")
-			case collector.StatusSkipped:
-				icon = yellowStyle.Render("-")
-			case collector.StatusError:
+				fmt.Printf("  %s input script ok\n", icon)
+			case runner.StatusError:
 				icon = redStyle.Render("\u2717")
+				fmt.Printf("  %s input script error: %v\n", icon, result.Error)
 			}
-
-			statusStr := string(r.Status)
-			if r.Status == collector.StatusError && r.Error != nil {
-				statusStr = fmt.Sprintf("error: %v", r.Error)
-			}
-
-			fmt.Printf("  %s %-8s %s\n", icon, r.Name, statusStr)
 		}
 	}
 

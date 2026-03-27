@@ -1,0 +1,434 @@
+input: |
+  #!/bin/sh
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  arch=$(uname -m)
+  hostname=$(hostname 2>/dev/null || echo "")
+
+  # Default all booleans for non-macOS.
+  if [ "$os" != "darwin" ]; then
+    printf '{"os":"%s","arch":"%s","hostname":"%s"}' "$os" "$arch" "$hostname"
+    exit 0
+  fi
+
+  # macOS-specific checks.
+  cmd_contains() {
+    output=$("$@" 2>&1) || return 1
+    return 0
+  }
+
+  bool_check() {
+    output=$($1 ${2:+"$2"} ${3:+"$3"} ${4:+"$4"} ${5:+"$5"} 2>&1)
+    if [ $? -ne 0 ]; then echo "false"; return; fi
+    if [ -z "$6" ]; then echo "true"; return; fi
+    if printf '%s' "$output" | grep -q "$6"; then echo "true"; else echo "false"; fi
+  }
+
+  sip=$(bool_check csrutil status "" "" "" "" "enabled")
+  filevault=$(bool_check fdesetup status "" "" "" "" "On")
+  firewall=$(bool_check /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate "" "" "" "enabled")
+  stealth=$(bool_check /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode "" "" "" "enabled")
+  gatekeeper=$(bool_check spctl --status "" "" "" "enabled")
+
+  # AutoLogin: if defaults read succeeds, auto-login IS enabled (bad).
+  auto_login_disabled=true
+  if defaults read /Library/Preferences/com.apple.loginwindow autoLoginUser >/dev/null 2>&1; then
+    auto_login_disabled=false
+  fi
+
+  guest_disabled=$(bool_check defaults read /Library/Preferences/com.apple.loginwindow GuestEnabled "" "" "0")
+
+  # Screen lock timeout.
+  timeout_raw=$(defaults -currentHost read com.apple.screensaver idleTime 2>/dev/null || echo "0")
+  screen_lock_timeout=$(printf '%s' "$timeout_raw" | tr -dc '0-9')
+  [ -z "$screen_lock_timeout" ] && screen_lock_timeout=0
+
+  os_auto_update=$(bool_check defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates "" "" "1")
+  app_auto_update=$(bool_check defaults read /Library/Preferences/com.apple.commerce AutoUpdate "" "" "1")
+  rsr=$(bool_check defaults read /Library/Preferences/com.apple.SoftwareUpdate ConfigDataInstall "" "" "1")
+
+  # Screen sharing: if launchctl list succeeds, it's enabled (bad).
+  screen_sharing_disabled=true
+  if launchctl list com.apple.screensharing >/dev/null 2>&1; then
+    screen_sharing_disabled=false
+  fi
+
+  # Internet sharing.
+  internet_sharing_disabled=true
+  if defaults read /Library/Preferences/SystemConfiguration/com.apple.nat Enabled 2>/dev/null | grep -q 1; then
+    internet_sharing_disabled=false
+  fi
+
+  printer_sharing_disabled=$(bool_check cupsctl "" "" "" "" "_share_printers=0")
+
+  # Remote Apple Events.
+  remote_apple_events_disabled=true
+  if launchctl list com.apple.AEServer >/dev/null 2>&1; then
+    remote_apple_events_disabled=false
+  fi
+
+  # AirDrop setting.
+  airdrop_raw=$(defaults read com.apple.sharingd DiscoverableMode 2>/dev/null || echo "Off")
+  case "$airdrop_raw" in
+    Everyone)       airdrop="everyone" ;;
+    "Contacts Only") airdrop="contacts_only" ;;
+    *)              airdrop="off" ;;
+  esac
+
+  # Rosetta.
+  rosetta=false
+  if pgrep -q oahd 2>/dev/null; then rosetta=true; fi
+
+  # EDR detection.
+  edr=false
+  for agent in com.crowdstrike.falcon com.sentinelone com.carbon.black com.microsoft.wdav; do
+    if launchctl list "$agent" >/dev/null 2>&1; then edr=true; break; fi
+  done
+
+  # Legacy kexts.
+  legacy_kexts_blocked=true
+  if kmutil showloaded --list-only 2>/dev/null | grep -q "com.apple"; then
+    legacy_kexts_blocked=false
+  fi
+
+  # MDM.
+  mdm=false
+  if profiles status -type enrollment 2>/dev/null | grep -q "MDM enrollment: Yes"; then
+    mdm=true
+  fi
+
+  cat <<EOF
+  {
+    "os": "$os",
+    "arch": "$arch",
+    "hostname": "$hostname",
+    "sip_enabled": $sip,
+    "filevault_enabled": $filevault,
+    "firewall_enabled": $firewall,
+    "stealth_mode_enabled": $stealth,
+    "gatekeeper_enabled": $gatekeeper,
+    "auto_login_disabled": $auto_login_disabled,
+    "guest_account_disabled": $guest_disabled,
+    "screen_lock_timeout_seconds": $screen_lock_timeout,
+    "os_auto_update_enabled": $os_auto_update,
+    "app_auto_update_enabled": $app_auto_update,
+    "rsr_enabled": $rsr,
+    "screen_sharing_disabled": $screen_sharing_disabled,
+    "internet_sharing_disabled": $internet_sharing_disabled,
+    "printer_sharing_disabled": $printer_sharing_disabled,
+    "remote_apple_events_disabled": $remote_apple_events_disabled,
+    "airdrop_setting": "$airdrop",
+    "rosetta_installed": $rosetta,
+    "edr_deployed": $edr,
+    "legacy_kexts_blocked": $legacy_kexts_blocked,
+    "mdm_enrolled": $mdm
+  }
+  EOF
+
+policy: |
+  package bouncer.os
+
+  import rego.v1
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.sip_enabled
+    f := {"rule_id": "OS001", "evidence": "System Integrity Protection is disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.filevault_enabled
+    f := {"rule_id": "OS002", "evidence": "FileVault disk encryption is disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.firewall_enabled
+    f := {"rule_id": "OS003", "evidence": "Application Firewall is disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.stealth_mode_enabled
+    f := {"rule_id": "OS004", "evidence": "Stealth Mode is disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.gatekeeper_enabled
+    f := {"rule_id": "OS005", "evidence": "Gatekeeper is disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.auto_login_disabled
+    f := {"rule_id": "OS006", "evidence": "Automatic login is enabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.guest_account_disabled
+    f := {"rule_id": "OS007", "evidence": "Guest account is enabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    input.screen_lock_timeout_seconds > 300
+    f := {
+      "rule_id": "OS008",
+      "evidence": sprintf("Screen lock timeout is %d seconds (maximum 300)", [input.screen_lock_timeout_seconds]),
+    }
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.os_auto_update_enabled
+    f := {"rule_id": "OS009", "evidence": "Automatic OS updates are disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.app_auto_update_enabled
+    f := {"rule_id": "OS010", "evidence": "Automatic App Store updates are disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.rsr_enabled
+    f := {"rule_id": "OS011", "evidence": "Rapid Security Responses are disabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.screen_sharing_disabled
+    f := {"rule_id": "OS013", "evidence": "Screen Sharing is enabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.internet_sharing_disabled
+    f := {"rule_id": "OS014", "evidence": "Internet Sharing is enabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.printer_sharing_disabled
+    f := {"rule_id": "OS015", "evidence": "Printer Sharing is enabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.remote_apple_events_disabled
+    f := {"rule_id": "OS016", "evidence": "Remote Apple Events are enabled"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    input.airdrop_setting == "everyone"
+    f := {"rule_id": "OS017", "evidence": "AirDrop is set to Everyone"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.edr_deployed
+    f := {"rule_id": "OS018", "evidence": "No Endpoint Detection & Response agent deployed"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.legacy_kexts_blocked
+    f := {"rule_id": "OS019", "evidence": "Legacy kernel extensions (kexts) are not blocked"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    not input.mdm_enrolled
+    f := {"rule_id": "OS020", "evidence": "Device is not enrolled in MDM"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    input.rosetta_installed
+    f := {"rule_id": "OS021", "evidence": "Rosetta 2 is installed; remove if no longer needed to reduce attack surface"}
+  }
+
+  findings contains f if {
+    input.os == "darwin"
+    input.airdrop_setting != "off"
+    input.airdrop_setting != "everyone"
+    f := {"rule_id": "OS022", "evidence": sprintf("AirDrop is set to %s; consider disabling entirely", [input.airdrop_setting])}
+  }
+
+rules:
+  - id: OS001
+    title: System Integrity Protection is disabled
+    severity: critical
+    category: os
+    description: |
+      System Integrity Protection (SIP) prevents modification of protected
+      system files and directories. Disabling SIP significantly weakens
+      macOS security.
+    remediation: "Boot into Recovery Mode and run: csrutil enable"
+  - id: OS002
+    title: FileVault disk encryption is disabled
+    severity: critical
+    category: os
+    description: |
+      FileVault provides full-disk encryption protecting data at rest.
+      Without it, data on the disk can be accessed by removing or
+      mounting the drive externally.
+    remediation: "Enable FileVault in System Settings > Privacy & Security > FileVault"
+  - id: OS003
+    title: Application Firewall is disabled
+    severity: high
+    category: os
+    description: |
+      The application firewall controls incoming network connections
+      on a per-application basis.
+    remediation: "Run: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on"
+  - id: OS004
+    title: Stealth Mode is disabled
+    severity: high
+    category: os
+    description: |
+      Stealth Mode prevents the Mac from responding to probing requests
+      such as ICMP ping, making it harder to discover on the network.
+    remediation: "Run: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on"
+  - id: OS005
+    title: Gatekeeper is disabled
+    severity: critical
+    category: os
+    description: |
+      Gatekeeper ensures only trusted software runs by verifying apps
+      are signed by an identified developer or distributed via the
+      App Store.
+    remediation: "Run: sudo spctl --master-enable"
+  - id: OS006
+    title: Automatic login is enabled
+    severity: high
+    category: os
+    description: |
+      Automatic login allows anyone with physical access to use the
+      Mac without authentication.
+    remediation: "Disable in System Settings > Users & Groups > Automatic login"
+  - id: OS007
+    title: Guest account is enabled
+    severity: high
+    category: os
+    description: |
+      The guest account allows unauthenticated access to the Mac
+      and can be used as an attack vector.
+    remediation: "Disable in System Settings > Users & Groups > Guest User"
+  - id: OS008
+    title: Screen lock timeout exceeds 5 minutes
+    severity: warn
+    category: os
+    description: |
+      A long screen lock timeout leaves the Mac accessible when
+      unattended. The timeout should be 300 seconds (5 minutes)
+      or less.
+    remediation: "Set in System Settings > Lock Screen > Require password after screen saver begins"
+  - id: OS009
+    title: Automatic OS updates are disabled
+    severity: high
+    category: os
+    description: |
+      Automatic OS updates ensure critical security patches are
+      applied promptly.
+    remediation: "Run: softwareupdate --schedule on"
+  - id: OS010
+    title: Automatic App Store updates are disabled
+    severity: warn
+    category: os
+    description: |
+      Automatic App Store updates keep applications patched against
+      known vulnerabilities.
+    remediation: "Enable in System Settings > General > Software Update > Automatic Updates"
+  - id: OS011
+    title: Rapid Security Responses are disabled
+    severity: high
+    category: os
+    description: |
+      Rapid Security Responses deliver urgent security fixes between
+      regular OS updates.
+    remediation: "Enable in System Settings > General > Software Update > Automatic Updates"
+  - id: OS013
+    title: Screen Sharing is enabled
+    severity: high
+    category: os
+    description: |
+      Screen Sharing allows remote access to the Mac desktop and
+      should be disabled unless actively needed.
+    remediation: "Run: sudo launchctl disable system/com.apple.screensharing"
+  - id: OS014
+    title: Internet Sharing is enabled
+    severity: high
+    category: os
+    description: |
+      Internet Sharing turns the Mac into a network gateway, which
+      can expose internal networks.
+    remediation: "Disable in System Settings > General > Sharing > Internet Sharing"
+  - id: OS015
+    title: Printer Sharing is enabled
+    severity: warn
+    category: os
+    description: |
+      Printer Sharing exposes the Mac on the network and should be
+      disabled unless required.
+    remediation: "Disable in System Settings > General > Sharing > Printer Sharing"
+  - id: OS016
+    title: Remote Apple Events are enabled
+    severity: high
+    category: os
+    description: |
+      Remote Apple Events allow other computers to send Apple Events
+      to this Mac, which can be used to execute commands remotely.
+    remediation: "Disable in System Settings > General > Sharing > Remote Apple Events"
+  - id: OS017
+    title: AirDrop is set to Everyone
+    severity: high
+    category: os
+    description: |
+      Setting AirDrop to Everyone allows any nearby device to send
+      files, increasing the risk of social engineering attacks.
+    remediation: "Set AirDrop to Contacts Only or Off in Finder > AirDrop"
+  - id: OS018
+    title: No EDR agent deployed
+    severity: critical
+    category: os
+    description: |
+      An Endpoint Detection & Response agent provides real-time
+      threat monitoring and incident response capabilities.
+    remediation: "Install the organization-approved EDR agent"
+  - id: OS019
+    title: Legacy kernel extensions are not blocked
+    severity: high
+    category: os
+    description: |
+      Legacy kernel extensions (kexts) run with full kernel privileges
+      and should be replaced with System Extensions.
+    remediation: "Configure system extension policy via MDM or System Settings"
+  - id: OS020
+    title: Device is not enrolled in MDM
+    severity: high
+    category: os
+    description: |
+      MDM enrollment enables centralized security policy enforcement,
+      remote wipe, and compliance monitoring.
+    remediation: "Enroll the device via your organization's MDM solution"
+  - id: OS021
+    title: Rosetta 2 is installed
+    severity: info
+    category: os
+    description: |
+      Rosetta 2 enables running Intel binaries on Apple Silicon. If
+      no longer needed, removing it reduces attack surface.
+    remediation: "Remove Rosetta 2 if no Intel-only applications are required"
+  - id: OS022
+    title: AirDrop is not fully disabled
+    severity: info
+    category: os
+    description: |
+      For high-risk roles, consider disabling AirDrop entirely
+      rather than using Contacts Only.
+    remediation: "Set AirDrop to Off in Finder > AirDrop"
