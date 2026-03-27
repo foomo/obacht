@@ -144,7 +144,7 @@ func TestPrettyReporter_ErrorMarker(t *testing.T) {
 
 	out := buf.String()
 
-	assert.Contains(t, out, "! GIT002")
+	assert.Contains(t, out, "! GIT002 [high]")
 }
 
 func TestPrettyReporter_GroupsByCategory(t *testing.T) {

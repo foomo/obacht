@@ -64,6 +64,8 @@ func (c *DockerCollector) Collect(ctx context.Context, facts *schema.Facts) Resu
 		sockPath = "/var/run/docker.sock"
 	}
 
+	sockPath = resolvePath(sockPath)
+
 	info, err := os.Stat(sockPath)
 	if err == nil {
 		facts.Docker.SocketExists = true

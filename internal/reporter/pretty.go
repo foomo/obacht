@@ -78,7 +78,13 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 				icon = redStyle.Render("!")
 			}
 
-			fmt.Fprintf(w, "  %s %s: %s\n", icon, cr.RuleID, cr.Title)
+			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
+				sevStyle := SeverityColorStyle(cr.Severity)
+				sevLabel := sevStyle.Render("[" + string(cr.Severity) + "]")
+				fmt.Fprintf(w, "  %s %s %s: %s\n", icon, cr.RuleID, sevLabel, cr.Title)
+			} else {
+				fmt.Fprintf(w, "  %s %s: %s\n", icon, cr.RuleID, cr.Title)
+			}
 
 			// For failures and errors, show evidence and remediation.
 			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
@@ -106,4 +112,20 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	)
 
 	return nil
+}
+
+// SeverityColorStyle returns the lipgloss style for the given severity level.
+func SeverityColorStyle(s schema.Severity) lipgloss.Style {
+	switch s {
+	case schema.SeverityCritical:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true)
+	case schema.SeverityHigh:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
+	case schema.SeverityWarn:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+	case schema.SeverityInfo:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	default:
+		return lipgloss.NewStyle()
+	}
 }

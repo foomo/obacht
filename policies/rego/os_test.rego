@@ -19,7 +19,6 @@ compliant_macos := {"os": {
 	"os_auto_update_enabled": true,
 	"app_auto_update_enabled": true,
 	"rsr_enabled": true,
-	"user_is_standard_account": true,
 	"screen_sharing_disabled": true,
 	"internet_sharing_disabled": true,
 	"printer_sharing_disabled": true,
@@ -193,19 +192,6 @@ test_os011_rsr_disabled if {
 test_os011_rsr_enabled if {
 	findings := os.findings with input as compliant_macos
 	not _has_rule(findings, "OS011")
-}
-
-# --- OS012: Standard Account ---
-
-test_os012_admin_account if {
-	findings := os.findings with input as object.union(compliant_macos, {"os": object.union(compliant_macos.os, {"user_is_standard_account": false})})
-	some f in findings
-	f.rule_id == "OS012"
-}
-
-test_os012_standard_account if {
-	findings := os.findings with input as compliant_macos
-	not _has_rule(findings, "OS012")
 }
 
 # --- OS013: Screen Sharing ---

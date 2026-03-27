@@ -35,7 +35,9 @@ func (c *SSHCollector) Collect(ctx context.Context, facts *schema.Facts) Result 
 		return Result{Name: c.Name(), Status: StatusError, Error: fmt.Errorf("determine home dir: %w", err)}
 	}
 
-	// Check if ~/.ssh exists.
+	// Resolve symlinks and check if ~/.ssh exists.
+	sshDir = resolvePath(sshDir)
+
 	info, err := os.Stat(sshDir)
 	if os.IsNotExist(err) {
 		facts.SSH = schema.SSHFacts{

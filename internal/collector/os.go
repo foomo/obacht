@@ -52,7 +52,6 @@ func (c *OSCollector) collectDarwin(ctx context.Context, facts *schema.Facts) {
 	facts.OS.OSAutoUpdateEnabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.SoftwareUpdate", "AutomaticallyInstallMacOSUpdates"}, "1")
 	facts.OS.AppAutoUpdateEnabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.commerce", "AutoUpdate"}, "1")
 	facts.OS.RSREnabled = cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/com.apple.SoftwareUpdate", "ConfigDataInstall"}, "1")
-	facts.OS.UserIsStandardAccount = !cmdContains(ctx, "groups", nil, "admin")
 	facts.OS.ScreenSharingDisabled = !cmdContains(ctx, "launchctl", []string{"list", "com.apple.screensharing"}, "")
 	facts.OS.InternetSharingDisabled = !cmdContains(ctx, "defaults", []string{"read", "/Library/Preferences/SystemConfiguration/com.apple.nat", "Enabled"}, "1")
 	facts.OS.PrinterSharingDisabled = cmdContains(ctx, "cupsctl", nil, "_share_printers=0")

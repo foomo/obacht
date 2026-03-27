@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
+	"github.com/franklinkim/bouncer/internal/reporter"
 	"github.com/franklinkim/bouncer/pkg/schema"
 )
 
@@ -65,7 +66,7 @@ func runExplain(cmd *cobra.Command, args []string) error {
 
 func printRule(r *schema.Rule) {
 	boldStyle := lipgloss.NewStyle().Bold(true)
-	severityStyle := severityColorStyle(r.Severity)
+	severityStyle := reporter.SeverityColorStyle(r.Severity)
 
 	fmt.Printf("%s %s\n", boldStyle.Render("Rule:"), r.ID)
 	fmt.Printf("%s %s\n", boldStyle.Render("Title:"), r.Title)
@@ -86,21 +87,6 @@ func printRule(r *schema.Rule) {
 		for _, line := range wrapLines(r.Remediation) {
 			fmt.Printf("  %s\n", line)
 		}
-	}
-}
-
-func severityColorStyle(s schema.Severity) lipgloss.Style {
-	switch s {
-	case schema.SeverityCritical:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true)
-	case schema.SeverityHigh:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
-	case schema.SeverityWarn:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
-	case schema.SeverityInfo:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
-	default:
-		return lipgloss.NewStyle()
 	}
 }
 

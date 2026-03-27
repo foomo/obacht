@@ -56,12 +56,16 @@ func TestSSHCollector_WithKeys(t *testing.T) {
 		keysByType[k.Type] = k
 	}
 
+	// resolvePath accounts for macOS /var -> /private/var symlinks in temp dirs.
+	resolvedSSHDir, err := filepath.EvalSymlinks(sshDir)
+	require.NoError(t, err)
+
 	rsaKey := keysByType["rsa"]
-	assert.Equal(t, filepath.Join(sshDir, "id_rsa"), rsaKey.Path)
+	assert.Equal(t, filepath.Join(resolvedSSHDir, "id_rsa"), rsaKey.Path)
 	assert.Equal(t, "0600", rsaKey.Mode)
 
 	edKey := keysByType["ed25519"]
-	assert.Equal(t, filepath.Join(sshDir, "id_ed25519"), edKey.Path)
+	assert.Equal(t, filepath.Join(resolvedSSHDir, "id_ed25519"), edKey.Path)
 	assert.Equal(t, "0600", edKey.Mode)
 }
 
@@ -78,6 +82,28 @@ func TestSSHCollector_NoConfig(t *testing.T) {
 	assert.True(t, facts.SSH.DirectoryExists)
 	assert.False(t, facts.SSH.ConfigExists)
 	assert.Empty(t, facts.SSH.Keys)
+}
+
+func TestSSHCollector_SymlinkedDir(t *testing.T) {
+	// Create a real .ssh directory with a key.
+	realHome := t.TempDir()
+	realSSH := filepath.Join(realHome, ".ssh")
+	require.NoError(t, os.MkdirAll(realSSH, 0700))
+	writeFile(t, filepath.Join(realSSH, "id_ed25519"), 0600)
+
+	// Create a fake home where .ssh is a symlink to the real one.
+	fakeHome := t.TempDir()
+	require.NoError(t, os.Symlink(realSSH, filepath.Join(fakeHome, ".ssh")))
+
+	c := &collector.SSHCollector{HomeDir: fakeHome}
+	facts := schema.NewFacts()
+	result := c.Collect(t.Context(), &facts)
+
+	assert.Equal(t, collector.StatusOK, result.Status)
+	assert.True(t, facts.SSH.DirectoryExists)
+	assert.Equal(t, "0700", facts.SSH.DirectoryMode)
+	require.Len(t, facts.SSH.Keys, 1)
+	assert.Equal(t, "ed25519", facts.SSH.Keys[0].Type)
 }
 
 func TestKeyTypeFromFilename(t *testing.T) {

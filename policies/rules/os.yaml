@@ -91,14 +91,6 @@ rules:
       Rapid Security Responses deliver urgent security fixes between
       regular OS updates.
     remediation: "Enable in System Settings > General > Software Update > Automatic Updates"
-  - id: OS012
-    title: User is operating as Admin
-    severity: warn
-    category: os
-    description: |
-      Running as a Standard (non-admin) user limits the blast radius
-      of malware and accidental system changes.
-    remediation: "Create a separate admin account and switch the daily account to Standard"
   - id: OS013
     title: Screen Sharing is enabled
     severity: high

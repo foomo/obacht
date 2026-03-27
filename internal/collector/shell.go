@@ -45,6 +45,7 @@ func (c *ShellCollector) Collect(_ context.Context, facts *schema.Facts) Result 
 	facts.Shell.HistoryFile = histFile
 
 	if histFile != "" {
+		histFile = resolvePath(histFile)
 		if info, err := os.Stat(histFile); err == nil {
 			facts.Shell.HistoryFileMode = fmt.Sprintf("%04o", info.Mode().Perm())
 		}

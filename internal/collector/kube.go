@@ -50,6 +50,8 @@ func (c *KubeCollector) Collect(ctx context.Context, facts *schema.Facts) Result
 		return Result{Name: c.Name(), Status: StatusError, Error: fmt.Errorf("determine home dir: %w", err)}
 	}
 
+	configPath = resolvePath(configPath)
+
 	info, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
 		facts.Kube = schema.KubeFacts{

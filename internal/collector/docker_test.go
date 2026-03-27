@@ -100,6 +100,37 @@ func TestDockerCollector_UserInGroup(t *testing.T) {
 	assert.True(t, facts.Docker.UserInGroup)
 }
 
+func TestDockerCollector_SymlinkedSocket(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create the real socket file in a subdirectory.
+	realDir := filepath.Join(tmp, "real")
+	require.NoError(t, os.MkdirAll(realDir, 0755))
+	realSock := filepath.Join(realDir, "docker.sock")
+	require.NoError(t, os.WriteFile(realSock, []byte(""), 0600))
+	require.NoError(t, os.Chmod(realSock, 0660))
+
+	// Create a symlink pointing to the real socket.
+	linkSock := filepath.Join(tmp, "docker.sock")
+	require.NoError(t, os.Symlink(realSock, linkSock))
+
+	c := &collector.DockerCollector{
+		SocketPath: linkSock,
+		LookPath: func(name string) (string, error) {
+			return testDockerPath, nil
+		},
+		LookupGroup: func(name string) (*user.Group, error) {
+			return nil, errors.New("group not found")
+		},
+	}
+	facts := schema.NewFacts()
+	result := c.Collect(t.Context(), &facts)
+
+	assert.Equal(t, collector.StatusOK, result.Status)
+	assert.True(t, facts.Docker.SocketExists)
+	assert.Equal(t, "0660", facts.Docker.SocketMode)
+}
+
 func TestDockerCollector_UserNotInGroup(t *testing.T) {
 	c := &collector.DockerCollector{
 		SocketPath: "/nonexistent/docker.sock",

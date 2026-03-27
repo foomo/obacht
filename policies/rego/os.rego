@@ -82,13 +82,6 @@ findings contains f if {
 	f := {"rule_id": "OS011", "evidence": "Rapid Security Responses are disabled"}
 }
 
-# OS012: Standard Account
-findings contains f if {
-	input.os.os == "darwin"
-	not input.os.user_is_standard_account
-	f := {"rule_id": "OS012", "evidence": "User is operating as Admin instead of Standard account"}
-}
-
 # OS013: Screen Sharing
 findings contains f if {
 	input.os.os == "darwin"

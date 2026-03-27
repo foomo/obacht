@@ -70,6 +70,26 @@ func TestShellCollector_Fish(t *testing.T) {
 	assert.Equal(t, histPath, facts.Shell.HistoryFile)
 }
 
+func TestShellCollector_SymlinkedHistoryFile(t *testing.T) {
+	// Create a real history file.
+	realDir := t.TempDir()
+	realHist := filepath.Join(realDir, ".zsh_history")
+	writeFile(t, realHist, 0600)
+
+	// Create a fake home where the history file is a symlink.
+	fakeHome := t.TempDir()
+	require.NoError(t, os.Symlink(realHist, filepath.Join(fakeHome, ".zsh_history")))
+
+	t.Setenv("SHELL", "/bin/zsh")
+
+	c := &collector.ShellCollector{HomeDir: fakeHome}
+	facts := schema.NewFacts()
+	result := c.Collect(t.Context(), &facts)
+
+	assert.Equal(t, collector.StatusOK, result.Status)
+	assert.Equal(t, "0600", facts.Shell.HistoryFileMode)
+}
+
 func TestShellCollector_NoHistoryFile(t *testing.T) {
 	home := t.TempDir()
 

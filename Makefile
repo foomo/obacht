@@ -12,14 +12,8 @@ endef
 # --- Targets -----------------------------------------------------------------
 
 # This allows us to accept extra arguments
-%: .mise .lefthook go.work
+%: .mise .lefthook
 	@:
-
-# Ensure go.work file
-go.work:
-	@go work init
-	@go work use -r .
-	@go work sync
 
 .PHONY: .mise
 # Install dependencies

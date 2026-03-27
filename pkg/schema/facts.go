@@ -30,7 +30,6 @@ type OSFacts struct {
 	OSAutoUpdateEnabled       bool   `json:"os_auto_update_enabled"`
 	AppAutoUpdateEnabled      bool   `json:"app_auto_update_enabled"`
 	RSREnabled                bool   `json:"rsr_enabled"`
-	UserIsStandardAccount     bool   `json:"user_is_standard_account"`
 	ScreenSharingDisabled     bool   `json:"screen_sharing_disabled"`
 	InternetSharingDisabled   bool   `json:"internet_sharing_disabled"`
 	PrinterSharingDisabled    bool   `json:"printer_sharing_disabled"`

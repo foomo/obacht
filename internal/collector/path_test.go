@@ -2,6 +2,7 @@ package collector_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/franklinkim/bouncer/internal/collector"
@@ -50,6 +51,26 @@ func TestPathCollector_Collect(t *testing.T) {
 	// Third entry: relative path.
 	assert.Equal(t, relativePath, facts.Path.Dirs[2].Path)
 	assert.True(t, facts.Path.Dirs[2].IsRelative, "relative path should be detected")
+}
+
+func TestPathCollector_SymlinkedDir(t *testing.T) {
+	// Create a real directory and a symlink to it.
+	realDir := t.TempDir()
+	linkParent := t.TempDir()
+	linkDir := filepath.Join(linkParent, "linked-bin")
+	require.NoError(t, os.Symlink(realDir, linkDir))
+
+	t.Setenv("PATH", linkDir)
+
+	c := collector.NewPathCollector()
+	facts := schema.NewFacts()
+	result := c.Collect(t.Context(), &facts)
+
+	require.NoError(t, result.Error)
+	require.Len(t, facts.Path.Dirs, 1)
+	assert.Equal(t, linkDir, facts.Path.Dirs[0].Path, "should preserve original symlink path")
+	assert.True(t, facts.Path.Dirs[0].Exists, "symlinked dir should be detected as existing")
+	assert.True(t, facts.Path.Dirs[0].Writable, "symlinked dir should be writable if target is writable")
 }
 
 func TestPathCollector_EmptyPATH(t *testing.T) {

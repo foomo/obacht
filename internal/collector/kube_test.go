@@ -89,6 +89,27 @@ func TestKubeCollector_WeakPermissions(t *testing.T) {
 	assert.Equal(t, "0644", facts.Kube.ConfigMode)
 }
 
+func TestKubeCollector_SymlinkedConfig(t *testing.T) {
+	// Create real config in one location.
+	realHome := t.TempDir()
+	realKubeDir := filepath.Join(realHome, ".kube")
+	require.NoError(t, os.MkdirAll(realKubeDir, 0700))
+	require.NoError(t, os.WriteFile(filepath.Join(realKubeDir, "config"), []byte(testKubeconfig), 0600))
+
+	// Create a fake home where .kube is a symlink to the real one.
+	fakeHome := t.TempDir()
+	require.NoError(t, os.Symlink(realKubeDir, filepath.Join(fakeHome, ".kube")))
+
+	c := &collector.KubeCollector{HomeDir: fakeHome}
+	facts := schema.NewFacts()
+	result := c.Collect(t.Context(), &facts)
+
+	assert.Equal(t, collector.StatusOK, result.Status)
+	assert.True(t, facts.Kube.ConfigExists)
+	assert.Equal(t, "0600", facts.Kube.ConfigMode)
+	require.Len(t, facts.Kube.Contexts, 2)
+}
+
 func TestKubeCollector_EmptyConfig(t *testing.T) {
 	home := t.TempDir()
 	kubeDir := filepath.Join(home, ".kube")
