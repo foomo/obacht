@@ -31,30 +31,6 @@ input: |
   dirs="$dirs]"
   printf '{"dirs": %s}' "$dirs"
 
-policy: |
-  package bouncer.path
-
-  import rego.v1
-
-  findings contains f if {
-    dir := input.dirs[_]
-    dir.exists
-    dir.writable
-    f := {
-      "rule_id": "PTH001",
-      "evidence": sprintf("Writable directory in PATH: %s", [dir.path]),
-    }
-  }
-
-  findings contains f if {
-    dir := input.dirs[_]
-    dir.is_relative
-    f := {
-      "rule_id": "PTH002",
-      "evidence": sprintf("Relative path in PATH: %s", [dir.path]),
-    }
-  }
-
 rules:
   - id: PTH001
     title: World-writable directory in PATH
@@ -65,6 +41,16 @@ rules:
       (and potentially others). An attacker could place malicious
       executables in this directory to hijack commands.
     remediation: "Remove the writable directory from PATH or fix its permissions"
+    policy: |
+      findings contains f if {
+        dir := input.dirs[_]
+        dir.exists
+        dir.writable
+        f := {
+          "rule_id": "PTH001",
+          "evidence": sprintf("Writable directory in PATH: %s", [dir.path]),
+        }
+      }
   - id: PTH002
     title: Relative path entry in PATH
     severity: warn
@@ -75,3 +61,12 @@ rules:
       exploit this by placing malicious executables in commonly
       visited directories.
     remediation: "Remove relative paths from PATH and use absolute paths instead"
+    policy: |
+      findings contains f if {
+        dir := input.dirs[_]
+        dir.is_relative
+        f := {
+          "rule_id": "PTH002",
+          "evidence": sprintf("Relative path in PATH: %s", [dir.path]),
+        }
+      }

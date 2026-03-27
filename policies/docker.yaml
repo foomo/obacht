@@ -26,31 +26,6 @@ input: |
   printf '{"installed": true, "socket_exists": %s, "socket_mode": "%s", "user_in_group": %s}' \
     "$socket_exists" "$socket_mode" "$user_in_group"
 
-policy: |
-  package bouncer.docker
-
-  import rego.v1
-
-  findings contains f if {
-    input.socket_exists
-    mode := input.socket_mode
-    mode != "0660"
-    mode != "0600"
-    mode != "0700"
-    f := {
-      "rule_id": "DOC001",
-      "evidence": sprintf("Docker socket has mode %s (expected 0660 or stricter)", [mode]),
-    }
-  }
-
-  findings contains f if {
-    input.user_in_group
-    f := {
-      "rule_id": "DOC002",
-      "evidence": "Current user is a member of the docker group",
-    }
-  }
-
 rules:
   - id: DOC001
     title: Docker socket has overly permissive access
@@ -61,6 +36,18 @@ rules:
       World-readable or world-writable permissions allow any user
       on the system to manage containers and access volumes.
     remediation: "Run: sudo chmod 660 /var/run/docker.sock"
+    policy: |
+      findings contains f if {
+        input.socket_exists
+        mode := input.socket_mode
+        mode != "0660"
+        mode != "0600"
+        mode != "0700"
+        f := {
+          "rule_id": "DOC001",
+          "evidence": sprintf("Docker socket has mode %s (expected 0660 or stricter)", [mode]),
+        }
+      }
   - id: DOC002
     title: User is in the docker group
     severity: warn
@@ -70,3 +57,11 @@ rules:
       to the Docker daemon. Consider using rootless Docker or
       requiring sudo for Docker commands.
     remediation: "See: https://docs.docker.com/engine/security/rootless/"
+    policy: |
+      findings contains f if {
+        input.user_in_group
+        f := {
+          "rule_id": "DOC002",
+          "evidence": "Current user is a member of the docker group",
+        }
+      }

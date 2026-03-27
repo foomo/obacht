@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/open-policy-agent/opa/v1/rego"
 
@@ -56,7 +57,7 @@ func buildRuleGroups(ruleFiles []schema.RulesFile) []ruleGroup {
 				// Rule has its own input/policy — it's its own group.
 				groups = append(groups, ruleGroup{
 					Input:  resolveField(rule.Input, rf.Input),
-					Policy: resolveField(rule.Policy, rf.Policy),
+					Policy: preparePolicy(resolveField(rule.Policy, rf.Policy), rule.Category),
 					Rules:  []schema.Rule{rule},
 				})
 			} else {
@@ -65,15 +66,40 @@ func buildRuleGroups(ruleFiles []schema.RulesFile) []ruleGroup {
 		}
 
 		if len(fileLevelRules) > 0 {
+			cat := ""
+			if len(fileLevelRules) > 0 {
+				cat = fileLevelRules[0].Category
+			}
 			groups = append(groups, ruleGroup{
 				Input:  rf.Input,
-				Policy: rf.Policy,
+				Policy: preparePolicy(rf.Policy, cat),
 				Rules:  fileLevelRules,
 			})
 		}
 	}
 
 	return groups
+}
+
+// preparePolicy ensures the policy string has a package declaration and rego.v1 import.
+// If the policy already starts with "package", it is returned unchanged.
+// Otherwise, the package name is derived from category.
+func preparePolicy(policy, category string) string {
+	if policy == "" {
+		return ""
+	}
+
+	trimmed := strings.TrimSpace(policy)
+	if strings.HasPrefix(trimmed, "package ") {
+		return policy
+	}
+
+	pkg := category
+	if pkg == "" {
+		pkg = "default"
+	}
+
+	return fmt.Sprintf("package bouncer.%s\nimport rego.v1\n\n%s", pkg, policy)
 }
 
 // resolveField returns the rule-level value if set, otherwise the file-level fallback.

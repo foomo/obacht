@@ -39,29 +39,6 @@ input: |
   printf '{"directory_exists": true, "directory_mode": "0%s", "keys": %s, "config_exists": %s}' \
     "$dir_mode" "$key_json" "$config_exists"
 
-policy: |
-  package bouncer.ssh
-
-  import rego.v1
-
-  findings contains f if {
-    key := input.keys[_]
-    key.mode != "0600"
-    f := {
-      "rule_id": "SSH001",
-      "evidence": sprintf("Key %s has mode %s (expected 0600)", [key.path, key.mode]),
-    }
-  }
-
-  findings contains f if {
-    input.directory_exists
-    input.directory_mode != "0700"
-    f := {
-      "rule_id": "SSH002",
-      "evidence": sprintf("~/.ssh has mode %s (expected 0700)", [input.directory_mode]),
-    }
-  }
-
 rules:
   - id: SSH001
     title: SSH private key has weak permissions
@@ -72,6 +49,15 @@ rules:
       Keys with permissions wider than 0600 can be read by
       other users on the system.
     remediation: "Run: chmod 600 ~/.ssh/id_*"
+    policy: |
+      findings contains f if {
+        key := input.keys[_]
+        key.mode != "0600"
+        f := {
+          "rule_id": "SSH001",
+          "evidence": sprintf("Key %s has mode %s (expected 0600)", [key.path, key.mode]),
+        }
+      }
   - id: SSH002
     title: SSH directory has weak permissions
     severity: high
@@ -81,3 +67,12 @@ rules:
       Permissions wider than 0700 may allow other users to read
       or modify SSH configuration and keys.
     remediation: "Run: chmod 700 ~/.ssh"
+    policy: |
+      findings contains f if {
+        input.directory_exists
+        input.directory_mode != "0700"
+        f := {
+          "rule_id": "SSH002",
+          "evidence": sprintf("~/.ssh has mode %s (expected 0700)", [input.directory_mode]),
+        }
+      }

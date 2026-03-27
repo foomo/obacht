@@ -27,20 +27,6 @@ input: |
   tools="$tools]"
   printf '{"tools": %s}' "$tools"
 
-policy: |
-  package bouncer.tools
-
-  import rego.v1
-
-  findings contains f if {
-    tool := input.tools[_]
-    not tool.installed
-    f := {
-      "rule_id": "TOL001",
-      "evidence": sprintf("Tool '%s' is not installed", [tool.name]),
-    }
-  }
-
 rules:
   - id: TOL001
     title: Security-relevant tool is missing
@@ -51,3 +37,12 @@ rules:
       environment. Missing tools may indicate gaps in your security
       workflow.
     remediation: "Install missing tools via your package manager"
+    policy: |
+      findings contains f if {
+        tool := input.tools[_]
+        not tool.installed
+        f := {
+          "rule_id": "TOL001",
+          "evidence": sprintf("Tool '%s' is not installed", [tool.name]),
+        }
+      }

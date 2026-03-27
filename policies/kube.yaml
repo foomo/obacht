@@ -62,29 +62,6 @@ input: |
   printf '{"config_exists": true, "config_mode": "0%s", "contexts": %s}' \
     "$config_mode" "$contexts"
 
-policy: |
-  package bouncer.kube
-
-  import rego.v1
-
-  findings contains f if {
-    input.config_exists
-    input.config_mode != "0600"
-    f := {
-      "rule_id": "KUB001",
-      "evidence": sprintf("~/.kube/config has mode %s (expected 0600)", [input.config_mode]),
-    }
-  }
-
-  findings contains f if {
-    ctx := input.contexts[_]
-    contains(lower(ctx.name), "prod")
-    f := {
-      "rule_id": "KUB002",
-      "evidence": sprintf("Production context found: %s (cluster: %s)", [ctx.name, ctx.cluster]),
-    }
-  }
-
 rules:
   - id: KUB001
     title: Kubeconfig has weak permissions
@@ -95,6 +72,15 @@ rules:
       only be readable by the owner. Permissions wider than 0600
       may expose cluster access tokens.
     remediation: "Run: chmod 600 ~/.kube/config"
+    policy: |
+      findings contains f if {
+        input.config_exists
+        input.config_mode != "0600"
+        f := {
+          "rule_id": "KUB001",
+          "evidence": sprintf("~/.kube/config has mode %s (expected 0600)", [input.config_mode]),
+        }
+      }
   - id: KUB002
     title: Production Kubernetes context is active
     severity: warn
@@ -104,3 +90,12 @@ rules:
       configured. Accidental kubectl commands could affect
       production workloads.
     remediation: "Switch context: kubectl config use-context <dev-context>"
+    policy: |
+      findings contains f if {
+        ctx := input.contexts[_]
+        contains(lower(ctx.name), "prod")
+        f := {
+          "rule_id": "KUB002",
+          "evidence": sprintf("Production context found: %s (cluster: %s)", [ctx.name, ctx.cluster]),
+        }
+      }

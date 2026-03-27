@@ -20,6 +20,13 @@ findings contains f if {
 }
 `
 
+// testPolicyAutoPrefix has no package/import — the engine should auto-prefix them.
+var testPolicyAutoPrefix = `findings contains f if {
+    input.directory_mode != "0700"
+    f := {"rule_id": "SSH002", "evidence": sprintf("~/.ssh has mode %s", [input.directory_mode])}
+}
+`
+
 var testRules = []schema.Rule{
 	{
 		ID:          "SSH002",
@@ -104,6 +111,58 @@ func TestEvaluate_InputError(t *testing.T) {
 	cr := result.Results[0]
 	assert.Equal(t, "SSH002", cr.RuleID)
 	assert.Equal(t, schema.StatusError, cr.Status)
+}
+
+func TestEvaluate_AutoPrefix(t *testing.T) {
+	ruleFiles := []schema.RulesFile{
+		{
+			Input: `printf '{"directory_mode": "0755"}'`,
+			Rules: []schema.Rule{
+				{
+					ID:       "SSH002",
+					Title:    "SSH directory permissions",
+					Severity: schema.SeverityHigh,
+					Category: "ssh",
+					Policy:   testPolicyAutoPrefix,
+				},
+			},
+		},
+	}
+
+	result, err := engine.Evaluate(t.Context(), ruleFiles)
+	require.NoError(t, err)
+	require.Len(t, result.Results, 1)
+
+	cr := result.Results[0]
+	assert.Equal(t, "SSH002", cr.RuleID)
+	assert.Equal(t, schema.StatusFail, cr.Status)
+	assert.Equal(t, "~/.ssh has mode 0755", cr.Evidence)
+}
+
+func TestEvaluate_AutoPrefix_FileLevelPolicy(t *testing.T) {
+	ruleFiles := []schema.RulesFile{
+		{
+			Input:  `printf '{"directory_mode": "0755"}'`,
+			Policy: testPolicyAutoPrefix,
+			Rules: []schema.Rule{
+				{
+					ID:       "SSH002",
+					Title:    "SSH directory permissions",
+					Severity: schema.SeverityHigh,
+					Category: "ssh",
+				},
+			},
+		},
+	}
+
+	result, err := engine.Evaluate(t.Context(), ruleFiles)
+	require.NoError(t, err)
+	require.Len(t, result.Results, 1)
+
+	cr := result.Results[0]
+	assert.Equal(t, "SSH002", cr.RuleID)
+	assert.Equal(t, schema.StatusFail, cr.Status)
+	assert.Equal(t, "~/.ssh has mode 0755", cr.Evidence)
 }
 
 func TestEvaluate_RuleLevelOverride(t *testing.T) {
