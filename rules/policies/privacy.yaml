@@ -1,0 +1,53 @@
+rules:
+  - id: PRV001
+    title: No password manager application detected
+    severity: warn
+    category: privacy
+    description: |
+      A password manager helps generate and store strong, unique
+      passwords for every account, which is a fundamental
+      cybersecurity practice. No recognized password manager was
+      found in /Applications.
+    remediation: "Install a password manager such as 1Password, Bitwarden, or KeePassXC"
+    policy: |
+      findings contains f if {
+        not input.password_manager_installed
+        f := {
+          "rule_id": "PRV001",
+          "evidence": "No password manager application detected in /Applications",
+        }
+      }
+  - id: PRV002
+    title: No VPN configuration detected
+    severity: info
+    category: privacy
+    description: |
+      A VPN encrypts network traffic and protects against
+      eavesdropping on untrusted networks. No macOS VPN
+      configuration or common VPN process was found.
+    remediation: "Configure a VPN in System Settings > Network > VPN or install a VPN application"
+    policy: |
+      findings contains f if {
+        not input.vpn_configured
+        f := {
+          "rule_id": "PRV002",
+          "evidence": "No VPN configuration or VPN process detected",
+        }
+      }
+  - id: PRV003
+    title: Encrypted DNS is not configured
+    severity: info
+    category: privacy
+    description: |
+      DNS-over-HTTPS or DNS-over-TLS encrypts DNS queries, preventing
+      network observers from seeing which domains you visit. No
+      encrypted DNS configuration was detected.
+    remediation: "Configure encrypted DNS via System Settings > Network > DNS, or install dnscrypt-proxy or cloudflared"
+    policy: |
+      findings contains f if {
+        not input.encrypted_dns
+        f := {
+          "rule_id": "PRV003",
+          "evidence": "No encrypted DNS (DoH/DoT) configuration detected",
+        }
+      }

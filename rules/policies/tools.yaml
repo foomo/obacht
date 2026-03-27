@@ -17,3 +17,22 @@ rules:
           "evidence": sprintf("Tool '%s' is not installed", [tool.name]),
         }
       }
+  - id: TOL002
+    title: Homebrew auto-update is disabled
+    severity: warn
+    category: tools
+    description: |
+      Homebrew auto-update ensures that formulae and cask definitions
+      are refreshed before installing or upgrading packages. Disabling
+      it via HOMEBREW_NO_AUTO_UPDATE means security patches in
+      dependencies may not be applied promptly.
+    remediation: "Remove or unset the HOMEBREW_NO_AUTO_UPDATE environment variable"
+    policy: |
+      findings contains f if {
+        input.homebrew_installed
+        input.homebrew_auto_update_disabled
+        f := {
+          "rule_id": "TOL002",
+          "evidence": "HOMEBREW_NO_AUTO_UPDATE is set, preventing automatic formula updates",
+        }
+      }

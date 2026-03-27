@@ -34,3 +34,41 @@ rules:
           "evidence": "Git commit signing is not enabled",
         }
       }
+  - id: GIT003
+    title: Git safe.directory set to wildcard
+    severity: high
+    category: git
+    description: |
+      Setting safe.directory to '*' disables Git's ownership checks
+      for all repositories. This defeats the protection against
+      CVE-2022-24765 where a malicious repository in a shared
+      directory could execute arbitrary commands.
+    remediation: "Run: git config --global --unset-all safe.directory"
+    policy: |
+      findings contains f if {
+        input.installed
+        input.safe_directory_wildcard
+        f := {
+          "rule_id": "GIT003",
+          "evidence": "Git safe.directory is set to '*', disabling ownership checks for all repositories",
+        }
+      }
+  - id: GIT004
+    title: Global gitignore does not exclude .env files
+    severity: warn
+    category: git
+    description: |
+      Without a global gitignore rule for .env files, secrets stored
+      in .env files can accidentally be committed to repositories.
+      A global exclusion acts as a safety net alongside per-repo
+      .gitignore files.
+    remediation: "Run: echo '.env' >> ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global"
+    policy: |
+      findings contains f if {
+        input.installed
+        not input.gitignore_excludes_env
+        f := {
+          "rule_id": "GIT004",
+          "evidence": "Global gitignore does not exclude .env files",
+        }
+      }

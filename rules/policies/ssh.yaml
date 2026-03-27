@@ -35,3 +35,40 @@ rules:
           "evidence": sprintf("~/.ssh has mode %s (expected 0700)", [input.directory_mode]),
         }
       }
+  - id: SSH003
+    title: SSH StrictHostKeyChecking is disabled
+    severity: high
+    category: ssh
+    description: |
+      Setting StrictHostKeyChecking to 'no' in SSH config disables
+      host key verification, making connections vulnerable to
+      man-in-the-middle attacks.
+    remediation: "Remove or change 'StrictHostKeyChecking no' in ~/.ssh/config"
+    policy: |
+      findings contains f if {
+        input.config_exists
+        input.strict_host_key_checking_disabled
+        f := {
+          "rule_id": "SSH003",
+          "evidence": "SSH config has StrictHostKeyChecking set to 'no'",
+        }
+      }
+  - id: SSH004
+    title: SSH agent forwarding is enabled globally
+    severity: warn
+    category: ssh
+    description: |
+      Enabling ForwardAgent globally (under Host *) allows any remote
+      server to use your local SSH agent. A compromised server could
+      use your forwarded keys to access other systems. Only enable
+      agent forwarding for specific trusted hosts.
+    remediation: "Remove 'ForwardAgent yes' from Host * section in ~/.ssh/config and add it only to specific trusted hosts"
+    policy: |
+      findings contains f if {
+        input.config_exists
+        input.forward_agent_global
+        f := {
+          "rule_id": "SSH004",
+          "evidence": "SSH agent forwarding is enabled globally (Host *)",
+        }
+      }

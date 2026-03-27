@@ -95,6 +95,53 @@ if profiles status -type enrollment 2>/dev/null | grep -q "MDM enrollment: Yes";
   mdm=true
 fi
 
+# Time Machine backup.
+timemachine_enabled=false
+if tmutil destinationinfo 2>/dev/null | grep -q "Name"; then
+  if defaults read /Library/Preferences/com.apple.TimeMachine AutoBackup 2>/dev/null | grep -q "1"; then
+    timemachine_enabled=true
+  fi
+fi
+
+# Remote Login (SSH server).
+remote_login_disabled=true
+if systemsetup -getremotelogin 2>/dev/null | grep -qi "on"; then
+  remote_login_disabled=false
+fi
+
+# Remote Management.
+remote_management_disabled=true
+if launchctl list com.apple.RemoteDesktop.agent >/dev/null 2>&1; then
+  remote_management_disabled=false
+fi
+
+# Bluetooth Sharing.
+bluetooth_sharing_disabled=true
+bt_sharing=$(defaults read com.apple.Bluetooth PrefKeyServicesEnabled 2>/dev/null || echo "0")
+if [ "$bt_sharing" = "1" ]; then
+  bluetooth_sharing_disabled=false
+fi
+
+# Media Sharing.
+media_sharing_disabled=true
+media_sharing=$(defaults read com.apple.amp.mediasharingd home-sharing-enabled 2>/dev/null || echo "0")
+if [ "$media_sharing" = "1" ]; then
+  media_sharing_disabled=false
+fi
+
+# File Sharing (SMB).
+file_sharing_disabled=true
+if launchctl list com.apple.smbd >/dev/null 2>&1; then
+  file_sharing_disabled=false
+fi
+
+# Content Caching.
+content_caching_disabled=true
+content_caching=$(defaults read /Library/Preferences/com.apple.AssetCache.plist Activated 2>/dev/null || echo "0")
+if [ "$content_caching" = "1" ]; then
+  content_caching_disabled=false
+fi
+
 cat <<EOF
 {
   "os": "$os",
@@ -119,6 +166,13 @@ cat <<EOF
   "rosetta_installed": $rosetta,
   "edr_deployed": $edr,
   "legacy_kexts_blocked": $legacy_kexts_blocked,
-  "mdm_enrolled": $mdm
+  "mdm_enrolled": $mdm,
+  "timemachine_enabled": $timemachine_enabled,
+  "remote_login_disabled": $remote_login_disabled,
+  "remote_management_disabled": $remote_management_disabled,
+  "bluetooth_sharing_disabled": $bluetooth_sharing_disabled,
+  "media_sharing_disabled": $media_sharing_disabled,
+  "file_sharing_disabled": $file_sharing_disabled,
+  "content_caching_disabled": $content_caching_disabled
 }
 EOF

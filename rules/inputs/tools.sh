@@ -24,4 +24,16 @@ for tool in git opa gpg ssh-agent; do
 done
 
 tools="$tools]"
-printf '{"tools": %s}' "$tools"
+
+# Homebrew auto-update check.
+homebrew_installed=false
+homebrew_auto_update_disabled=false
+if command -v brew >/dev/null 2>&1; then
+  homebrew_installed=true
+  if [ -n "${HOMEBREW_NO_AUTO_UPDATE:-}" ]; then
+    homebrew_auto_update_disabled=true
+  fi
+fi
+
+printf '{"tools": %s, "homebrew_installed": %s, "homebrew_auto_update_disabled": %s}' \
+  "$tools" "$homebrew_installed" "$homebrew_auto_update_disabled"

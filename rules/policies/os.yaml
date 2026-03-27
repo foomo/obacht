@@ -301,3 +301,104 @@ rules:
         input.airdrop_setting != "everyone"
         f := {"rule_id": "OS022", "evidence": sprintf("AirDrop is set to %s; consider disabling entirely", [input.airdrop_setting])}
       }
+  - id: OS023
+    title: Time Machine backup is disabled
+    severity: warn
+    category: os
+    description: |
+      Time Machine provides automatic backups that protect against data
+      loss from ransomware, hardware failure, or accidental deletion.
+    remediation: "Enable Time Machine in System Settings > General > Time Machine"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.timemachine_enabled
+        f := {"rule_id": "OS023", "evidence": "Time Machine backup is not enabled or no backup destination is configured"}
+      }
+  - id: OS024
+    title: Remote Login (SSH server) is enabled
+    severity: high
+    category: os
+    description: |
+      Remote Login runs an SSH server on the Mac, allowing remote
+      shell access. This expands the attack surface and should be
+      disabled unless actively needed.
+    remediation: "Disable in System Settings > General > Sharing > Remote Login"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.remote_login_disabled
+        f := {"rule_id": "OS024", "evidence": "Remote Login (SSH server) is enabled"}
+      }
+  - id: OS025
+    title: Remote Management is enabled
+    severity: high
+    category: os
+    description: |
+      Remote Management allows remote control of the Mac via Apple
+      Remote Desktop or VNC. This should be disabled unless required
+      by IT policy.
+    remediation: "Disable in System Settings > General > Sharing > Remote Management"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.remote_management_disabled
+        f := {"rule_id": "OS025", "evidence": "Remote Management is enabled"}
+      }
+  - id: OS026
+    title: Bluetooth Sharing is enabled
+    severity: warn
+    category: os
+    description: |
+      Bluetooth Sharing allows other devices to send files via
+      Bluetooth. This should be disabled to reduce attack surface.
+    remediation: "Disable in System Settings > General > Sharing > Bluetooth Sharing"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.bluetooth_sharing_disabled
+        f := {"rule_id": "OS026", "evidence": "Bluetooth Sharing is enabled"}
+      }
+  - id: OS027
+    title: Media Sharing is enabled
+    severity: warn
+    category: os
+    description: |
+      Media Sharing exposes media libraries on the local network and
+      should be disabled to reduce attack surface.
+    remediation: "Disable in System Settings > General > Sharing > Media Sharing"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.media_sharing_disabled
+        f := {"rule_id": "OS027", "evidence": "Media Sharing is enabled"}
+      }
+  - id: OS028
+    title: File Sharing (SMB) is enabled
+    severity: warn
+    category: os
+    description: |
+      File Sharing opens SMB network ports, allowing other devices to
+      access shared folders. This should be disabled unless actively needed.
+    remediation: "Disable in System Settings > General > Sharing > File Sharing"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.file_sharing_disabled
+        f := {"rule_id": "OS028", "evidence": "File Sharing (SMB) is enabled"}
+      }
+  - id: OS029
+    title: Content Caching is enabled
+    severity: warn
+    category: os
+    description: |
+      Content Caching shares downloaded Apple content with other devices
+      on the network. On developer machines this is unnecessary and
+      increases network exposure.
+    remediation: "Disable in System Settings > General > Sharing > Content Caching"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.content_caching_disabled
+        f := {"rule_id": "OS029", "evidence": "Content Caching is enabled"}
+      }

@@ -29,3 +29,36 @@ The `~/.ssh` directory should only be accessible by the owner. Weak directory pe
 ```bash
 chmod 700 ~/.ssh
 ```
+
+## SSH003: SSH StrictHostKeyChecking is disabled
+
+**Severity:** high
+
+Setting `StrictHostKeyChecking` to `no` in SSH config disables host key verification, making connections vulnerable to man-in-the-middle attacks. An attacker could intercept connections and impersonate the remote server.
+
+**What it checks:**
+- Whether `StrictHostKeyChecking no` appears in `~/.ssh/config`
+
+**Remediation:**
+```bash
+# Remove or change the setting in ~/.ssh/config
+# Replace: StrictHostKeyChecking no
+# With:    StrictHostKeyChecking ask
+```
+
+## SSH004: SSH agent forwarding is enabled globally
+
+**Severity:** warn
+
+Enabling `ForwardAgent` globally (under `Host *`) allows any remote server to use your local SSH agent. A compromised server could use your forwarded keys to access other systems. Only enable agent forwarding for specific trusted hosts.
+
+**What it checks:**
+- Whether `ForwardAgent yes` is set in the `Host *` section of `~/.ssh/config`
+
+**Remediation:**
+```bash
+# Remove ForwardAgent yes from Host * section in ~/.ssh/config
+# Add it only to specific trusted hosts:
+Host trusted-server
+    ForwardAgent yes
+```

@@ -32,3 +32,33 @@ Unsigned commits can be trivially spoofed by setting `user.email` to any value. 
 git config --global commit.gpgsign true
 git config --global user.signingkey <your-key-id>
 ```
+
+## GIT003: Git safe.directory set to wildcard
+
+**Severity:** high
+
+Setting `safe.directory` to `*` disables Git's ownership checks for all repositories. This defeats the protection against CVE-2022-24765 where a malicious repository in a shared directory could execute arbitrary commands via Git hooks.
+
+**What it checks:**
+- Whether `safe.directory` is set to `*` in global Git configuration
+
+**Remediation:**
+```bash
+git config --global --unset-all safe.directory
+```
+
+## GIT004: Global gitignore does not exclude .env files
+
+**Severity:** warn
+
+Without a global gitignore rule for `.env` files, secrets stored in `.env` files can accidentally be committed to repositories. A global exclusion acts as a safety net alongside per-repo `.gitignore` files.
+
+**What it checks:**
+- Whether a global `core.excludesfile` is configured
+- Whether that file contains a `.env` exclusion pattern
+
+**Remediation:**
+```bash
+echo '.env' >> ~/.gitignore_global
+git config --global core.excludesfile ~/.gitignore_global
+```
