@@ -106,9 +106,16 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 
 	// Summary line.
 	s := result.Summary
-	fmt.Fprintf(w, "Summary: %d failed, %d passed, %d skipped (%d critical, %d high, %d warn, %d info)\n",
+	critStyle := SeverityColorStyle(schema.SeverityCritical)
+	highStyle := SeverityColorStyle(schema.SeverityHigh)
+	warnStyle := SeverityColorStyle(schema.SeverityWarn)
+	infoStyle := SeverityColorStyle(schema.SeverityInfo)
+	fmt.Fprintf(w, "Summary: %d failed, %d passed, %d skipped (%s, %s, %s, %s)\n",
 		s.Failed, s.Passed, s.Skipped,
-		s.Critical, s.High, s.Warn, s.Info,
+		critStyle.Render(fmt.Sprintf("%d critical", s.Critical)),
+		highStyle.Render(fmt.Sprintf("%d high", s.High)),
+		warnStyle.Render(fmt.Sprintf("%d warn", s.Warn)),
+		infoStyle.Render(fmt.Sprintf("%d info", s.Info)),
 	)
 
 	return nil
