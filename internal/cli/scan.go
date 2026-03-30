@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,8 +20,10 @@ import (
 )
 
 var (
-	category string
-	severity string
+	category    string
+	severity    string
+	rule        string
+	excludeRule string
 )
 
 var scanCmd = &cobra.Command{
@@ -32,6 +35,8 @@ var scanCmd = &cobra.Command{
 func init() {
 	scanCmd.Flags().StringVar(&category, "category", "", "comma-separated list of categories to scan (e.g. ssh,git,env)")
 	scanCmd.Flags().StringVar(&severity, "severity", "", "comma-separated list of severities to include (critical,high,warn,info)")
+	scanCmd.Flags().StringVar(&rule, "rule", "", "comma-separated list of rule IDs to run (e.g. SSH001,GIT003)")
+	scanCmd.Flags().StringVar(&excludeRule, "exclude-rule", "", "comma-separated list of rule IDs to exclude (e.g. SSH001,GIT003)")
 	rootCmd.AddCommand(scanCmd)
 }
 
@@ -77,6 +82,118 @@ func parseSeverities() map[schema.Severity]bool {
 	}
 
 	return sevs
+}
+
+// parseRuleIDs splits a comma-separated rule ID string into a set.
+func parseRuleIDs(s string) map[string]bool {
+	if s == "" {
+		return nil
+	}
+
+	ids := make(map[string]bool)
+
+	for id := range strings.SplitSeq(s, ",") {
+		id = strings.TrimSpace(id)
+		if id != "" {
+			ids[id] = true
+		}
+	}
+
+	if len(ids) == 0 {
+		return nil
+	}
+
+	return ids
+}
+
+// collectRuleIDs returns the set of all rule IDs across the given rule files.
+func collectRuleIDs(ruleFiles []schema.RulesFile) map[string]bool {
+	ids := make(map[string]bool)
+
+	for _, rf := range ruleFiles {
+		for _, r := range rf.Rules {
+			ids[r.ID] = true
+		}
+	}
+
+	return ids
+}
+
+// validateRuleIDs returns an error if any key in requested is not present in known.
+func validateRuleIDs(requested, known map[string]bool) error {
+	var unknown []string
+
+	for id := range requested {
+		if !known[id] {
+			unknown = append(unknown, id)
+		}
+	}
+
+	if len(unknown) == 0 {
+		return nil
+	}
+
+	sort.Strings(unknown)
+
+	return fmt.Errorf("unknown rule IDs: %s", strings.Join(unknown, ", "))
+}
+
+// filterRuleFilesByID returns rule files with only the rules whose ID is in the set.
+func filterRuleFilesByID(ruleFiles []schema.RulesFile, ids map[string]bool) []schema.RulesFile {
+	if ids == nil {
+		return ruleFiles
+	}
+
+	var filtered []schema.RulesFile
+
+	for _, rf := range ruleFiles {
+		var rules []schema.Rule
+
+		for _, r := range rf.Rules {
+			if ids[r.ID] {
+				rules = append(rules, r)
+			}
+		}
+
+		if len(rules) > 0 {
+			filtered = append(filtered, schema.RulesFile{
+				Input:  rf.Input,
+				Policy: rf.Policy,
+				Rules:  rules,
+			})
+		}
+	}
+
+	return filtered
+}
+
+// excludeRuleFilesByID returns rule files with rules whose ID is not in the set.
+func excludeRuleFilesByID(ruleFiles []schema.RulesFile, ids map[string]bool) []schema.RulesFile {
+	if ids == nil {
+		return ruleFiles
+	}
+
+	var filtered []schema.RulesFile
+
+	for _, rf := range ruleFiles {
+		var rules []schema.Rule
+
+		for _, r := range rf.Rules {
+			if !ids[r.ID] {
+				rules = append(rules, r)
+			}
+		}
+
+		if len(rules) > 0 {
+			filtered = append(filtered, schema.RulesFile{
+				Input:  rf.Input,
+				Policy: rf.Policy,
+				Rules:  rules,
+			})
+		}
+	}
+
+	return filtered
 }
 
 // filterRuleFiles returns rule files with only the rules matching the category set.
@@ -158,6 +275,29 @@ func runScan(cmd *cobra.Command, args []string) error {
 		ruleFiles = mergeRuleFiles(ruleFiles, extRuleFiles)
 	}
 
+	// Parse rule ID filters.
+	ruleIDs := parseRuleIDs(rule)
+	excludeIDs := parseRuleIDs(excludeRule)
+
+	// --rule is mutually exclusive with --category and --severity.
+	if ruleIDs != nil && (category != "" || severity != "") {
+		return fmt.Errorf("--rule cannot be combined with --category or --severity")
+	}
+
+	// Validate rule IDs against the full set of loaded rules.
+	allIDs := collectRuleIDs(ruleFiles)
+
+	if err := validateRuleIDs(ruleIDs, allIDs); err != nil {
+		return err
+	}
+
+	if err := validateRuleIDs(excludeIDs, allIDs); err != nil {
+		return err
+	}
+
+	// Filter by rule ID (allowlist).
+	ruleFiles = filterRuleFilesByID(ruleFiles, ruleIDs)
+
 	// Filter by category.
 	cats := parseCategories()
 	ruleFiles = filterRuleFiles(ruleFiles, cats)
@@ -165,6 +305,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 	// Filter by severity.
 	sevs := parseSeverities()
 	ruleFiles = filterRuleFilesBySeverity(ruleFiles, sevs)
+
+	// Exclude specific rules (blocklist, applied last).
+	ruleFiles = excludeRuleFilesByID(ruleFiles, excludeIDs)
 
 	// Evaluate all rule files.
 	var scanResult *schema.ScanResult

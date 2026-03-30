@@ -54,7 +54,43 @@ rules:
         }
       }
   - id: GIT004
-    title: Global gitignore does not exclude .env files
+    title: Global gitignore does not exclude macOS artifacts
+    severity: warn
+    category: git
+    description: |
+      macOS creates metadata files like .DS_Store, .Spotlight-V100, and
+      resource forks (._*) that should never be committed. A global
+      gitignore exclusion prevents these from leaking into repositories.
+    remediation: "Add missing entries to your global gitignore: git config --global core.excludesfile ~/.gitignore_global && edit ~/.gitignore_global"
+    policy: |
+      findings contains f if {
+        input.installed
+        count(input.gitignore_missing_macos) > 0
+        f := {
+          "rule_id": "GIT004",
+          "evidence": sprintf("Global gitignore is missing %d macOS entries: %s", [count(input.gitignore_missing_macos), concat(", ", input.gitignore_missing_macos)]),
+        }
+      }
+  - id: GIT005
+    title: Global gitignore does not exclude key and certificate files
+    severity: warn
+    category: git
+    description: |
+      Private keys, certificates, and keystores should never be committed
+      to a repository. A global gitignore exclusion for common key file
+      extensions (*.pem, *.key, *.p12, etc.) acts as a safety net.
+    remediation: "Add missing entries to your global gitignore: git config --global core.excludesfile ~/.gitignore_global && edit ~/.gitignore_global"
+    policy: |
+      findings contains f if {
+        input.installed
+        count(input.gitignore_missing_keys) > 0
+        f := {
+          "rule_id": "GIT005",
+          "evidence": sprintf("Global gitignore is missing %d key/cert entries: %s", [count(input.gitignore_missing_keys), concat(", ", input.gitignore_missing_keys)]),
+        }
+      }
+  - id: GIT006
+    title: Global gitignore does not exclude environment secrets
     severity: warn
     category: git
     description: |
@@ -62,13 +98,13 @@ rules:
       in .env files can accidentally be committed to repositories.
       A global exclusion acts as a safety net alongside per-repo
       .gitignore files.
-    remediation: "Run: echo '.env' >> ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global"
+    remediation: "Add missing entries to your global gitignore: git config --global core.excludesfile ~/.gitignore_global && edit ~/.gitignore_global"
     policy: |
       findings contains f if {
         input.installed
-        not input.gitignore_excludes_env
+        count(input.gitignore_missing_env) > 0
         f := {
-          "rule_id": "GIT004",
-          "evidence": "Global gitignore does not exclude .env files",
+          "rule_id": "GIT006",
+          "evidence": sprintf("Global gitignore is missing %d env entries: %s", [count(input.gitignore_missing_env), concat(", ", input.gitignore_missing_env)]),
         }
       }

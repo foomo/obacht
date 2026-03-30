@@ -1,0 +1,19 @@
+rules:
+  - id: CLD001
+    title: Global gitignore does not exclude Claude Code local settings
+    severity: warn
+    category: claude
+    description: |
+      Claude Code stores user-specific settings in .claude/settings.local.json
+      which may contain personal configuration. A global gitignore entry for
+      **/.claude/settings.local.json prevents accidental commits.
+    remediation: "Run: echo '**/.claude/settings.local.json' >> ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global"
+    policy: |
+      findings contains f if {
+        input.installed
+        not input.gitignore_excludes_settings
+        f := {
+          "rule_id": "CLD001",
+          "evidence": "Global gitignore does not exclude **/.claude/settings.local.json",
+        }
+      }
