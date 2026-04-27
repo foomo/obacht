@@ -271,3 +271,72 @@ func TestPrettyReporter_BulletsMultipleEvidence(t *testing.T) {
 	// The original joined wall-of-text must NOT appear on a single line.
 	assert.NotContains(t, out, "exact:GITHUB_TOKEN); Suspicious env var: JIRA_API_TOKEN")
 }
+
+func TestPrettyReporter_InlineSingleEvidence(t *testing.T) {
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, sampleScanResult())
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	// Single-part evidence stays inline.
+	assert.Contains(t, out, "      Evidence: ~/.ssh has mode 0755\n")
+	// Must not be promoted to a bullet.
+	assert.NotContains(t, out, "        - ~/.ssh has mode 0755")
+}
+
+func TestPrettyReporter_EmptyEvidence(t *testing.T) {
+	results := []schema.CheckResult{
+		{
+			RuleID:   "ENV999",
+			Title:    "Test rule",
+			Severity: schema.SeverityHigh,
+			Category: "Env",
+			Status:   schema.StatusFail,
+			Evidence: "",
+		},
+	}
+	sr := schema.NewScanResult(results)
+
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, &sr)
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	// Rule still appears.
+	assert.Contains(t, out, "ENV999")
+	// No Evidence line at all.
+	assert.NotContains(t, out, "Evidence")
+}
+
+func TestPrettyReporter_TrailingSeparator(t *testing.T) {
+	results := []schema.CheckResult{
+		{
+			RuleID:   "ENV998",
+			Title:    "Test rule",
+			Severity: schema.SeverityHigh,
+			Category: "Env",
+			Status:   schema.StatusFail,
+			Evidence: "first finding; second finding; ",
+		},
+	}
+	sr := schema.NewScanResult(results)
+
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, &sr)
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	assert.Contains(t, out, "        - first finding\n")
+	assert.Contains(t, out, "        - second finding\n")
+	// Trailing empty part must not produce an empty bullet line.
+	assert.NotContains(t, out, "        - \n")
+}
