@@ -63,7 +63,7 @@ type Summary struct {
 	Info     int `json:"info"`
 }
 
-// ScanResult is the complete output of a bouncer scan.
+// ScanResult is the complete output of a obacht scan.
 type ScanResult struct {
 	SchemaVersion string        `json:"schema_version"`
 	Results       []CheckResult `json:"results"`

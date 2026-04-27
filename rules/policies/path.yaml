@@ -4,18 +4,19 @@ rules:
     severity: high
     category: path
     description: |
-      A directory in your PATH is writable by the current user
-      (and potentially others). An attacker could place malicious
-      executables in this directory to hijack commands.
-    remediation: "Remove the writable directory from PATH or fix its permissions"
+      A world-writable directory in your PATH allows any user on the
+      system to place malicious executables that hijack commands.
+      Standard permissions like 0755 are accepted; only directories
+      with the others-write bit set (e.g., 0777) are flagged.
+    remediation: "Remove the world-writable directory from PATH or tighten its permissions (e.g., chmod 0755)"
     policy: |
       findings contains f if {
         dir := input.dirs[_]
         dir.exists
-        dir.writable
+        dir.world_writable
         f := {
           "rule_id": "PTH001",
-          "evidence": sprintf("Writable directory in PATH: %s", [dir.path]),
+          "evidence": sprintf("World-writable directory in PATH: %s (mode %s)", [dir.path, dir.mode]),
         }
       }
   - id: PTH002

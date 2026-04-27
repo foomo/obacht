@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/franklinkim/bouncer/internal/reporter"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/internal/reporter"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 var explainCmd = &cobra.Command{

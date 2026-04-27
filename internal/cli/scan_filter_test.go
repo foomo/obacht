@@ -8,14 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/franklinkim/bouncer/internal/cli"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/internal/cli"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 var testRuleFiles = []schema.RulesFile{
 	{
 		Input:  "echo ssh",
-		Policy: "package bouncer.ssh",
+		Policy: "package obacht.ssh",
 		Rules: []schema.Rule{
 			{ID: "SSH001", Category: "ssh", Severity: schema.SeverityHigh},
 			{ID: "SSH002", Category: "ssh", Severity: schema.SeverityCritical},
@@ -23,7 +23,7 @@ var testRuleFiles = []schema.RulesFile{
 	},
 	{
 		Input:  "echo git",
-		Policy: "package bouncer.git",
+		Policy: "package obacht.git",
 		Rules: []schema.Rule{
 			{ID: "GIT001", Category: "git", Severity: schema.SeverityWarn},
 			{ID: "GIT002", Category: "git", Severity: schema.SeverityInfo},
@@ -123,7 +123,7 @@ func TestFilterRuleFilesByID(t *testing.T) {
 		got := cli.FilterRuleFilesByID(testRuleFiles, map[string]bool{"GIT001": true})
 		require.Len(t, got, 1)
 		assert.Equal(t, "echo git", got[0].Input)
-		assert.Equal(t, "package bouncer.git", got[0].Policy)
+		assert.Equal(t, "package obacht.git", got[0].Policy)
 	})
 }
 

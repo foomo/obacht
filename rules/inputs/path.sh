@@ -14,17 +14,21 @@ for entry in $PATH; do
 
   exists=false
   writable=false
+  world_writable=false
+  mode=""
   if [ -d "$entry" ]; then
     exists=true
-    # Test writability by attempting to create a temp file.
-    tmpfile=$(mktemp "$entry/.bouncer-check-XXXXXX" 2>/dev/null) && {
+    if [ -w "$entry" ]; then
       writable=true
-      rm -f "$tmpfile"
-    }
+    fi
+    mode=$(stat -f '%Lp' "$entry" 2>/dev/null || stat -c '%a' "$entry" 2>/dev/null || echo "")
+    case "$mode" in
+      *2|*3|*6|*7) world_writable=true ;;
+    esac
   fi
 
   if [ "$first" = true ]; then first=false; else dirs="$dirs,"; fi
-  dirs="$dirs{\"path\":\"$entry\",\"exists\":$exists,\"writable\":$writable,\"is_relative\":$is_relative}"
+  dirs="$dirs{\"path\":\"$entry\",\"exists\":$exists,\"writable\":$writable,\"world_writable\":$world_writable,\"mode\":\"$mode\",\"is_relative\":$is_relative}"
 done
 
 dirs="$dirs]"

@@ -1,6 +1,6 @@
 package cli
 
-// Exit codes for the bouncer CLI.
+// Exit codes for the obacht CLI.
 const (
 	OK       = 0 // No findings
 	Findings = 1 // Security findings detected

@@ -220,7 +220,7 @@ Set AirDrop to Contacts Only or Off in Finder > AirDrop.
 
 ## OS018: No EDR agent deployed
 
-**Severity:** critical
+**Severity:** warn
 
 An Endpoint Detection & Response agent provides real-time threat monitoring and incident response capabilities.
 
@@ -233,7 +233,7 @@ Install the organization-approved EDR agent.
 
 ## OS019: Legacy kernel extensions are not blocked
 
-**Severity:** high
+**Severity:** warn
 
 Legacy kernel extensions (kexts) run with full kernel privileges and should be replaced with System Extensions.
 
@@ -246,7 +246,7 @@ Configure system extension policy via MDM or System Settings.
 
 ## OS020: Device is not enrolled in MDM
 
-**Severity:** high
+**Severity:** info
 
 MDM enrollment enables centralized security policy enforcement, remote wipe, and compliance monitoring.
 

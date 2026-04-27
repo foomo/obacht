@@ -9,14 +9,14 @@ import (
 	"sort"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/franklinkim/bouncer/internal/reporter"
-	"github.com/franklinkim/bouncer/pkg/engine"
-	"github.com/franklinkim/bouncer/pkg/schema"
-	"github.com/franklinkim/bouncer/rules"
+	"github.com/foomo/obacht/internal/reporter"
+	"github.com/foomo/obacht/pkg/engine"
+	"github.com/foomo/obacht/pkg/schema"
+	"github.com/foomo/obacht/rules"
 )
 
 var (
@@ -24,6 +24,7 @@ var (
 	severity    string
 	rule        string
 	excludeRule string
+	showPassing bool
 )
 
 var scanCmd = &cobra.Command{
@@ -37,6 +38,7 @@ func init() {
 	scanCmd.Flags().StringVar(&severity, "severity", "", "comma-separated list of severities to include (critical,high,warn,info)")
 	scanCmd.Flags().StringVar(&rule, "rule", "", "comma-separated list of rule IDs to run (e.g. SSH001,GIT003)")
 	scanCmd.Flags().StringVar(&excludeRule, "exclude-rule", "", "comma-separated list of rule IDs to exclude (e.g. SSH001,GIT003)")
+	scanCmd.Flags().BoolVar(&showPassing, "show-passing", false, "include passing checks in pretty output (no effect on --format json)")
 	rootCmd.AddCommand(scanCmd)
 }
 
@@ -341,7 +343,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	}
 
 	// Report results.
-	rep := reporter.ForFormat(format)
+	rep := reporter.ForFormat(format, showPassing)
 	if err := rep.Report(os.Stdout, scanResult); err != nil {
 		fmt.Fprintf(os.Stderr, "reporting results: %v\n", err)
 		os.Exit(Error)

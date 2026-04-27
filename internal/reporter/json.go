@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 // JSONReporter outputs scan results as formatted JSON.

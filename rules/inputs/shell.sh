@@ -15,7 +15,7 @@ if [ -n "$hist_file" ] && [ -f "$hist_file" ]; then
   # Resolve symlinks.
   real_hist=$(readlink -f "$hist_file" 2>/dev/null || echo "$hist_file")
   hist_mode=$(stat -f '%04Lp' "$real_hist" 2>/dev/null || stat -c '%04a' "$real_hist" 2>/dev/null || echo "")
-  hist_mode="0$hist_mode"
+  hist_mode="$hist_mode"
 fi
 
 histcontrol="${HISTCONTROL:-}"

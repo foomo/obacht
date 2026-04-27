@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/progress"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
-	"github.com/franklinkim/bouncer/pkg/engine"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/pkg/engine"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 const categoryWidth = 12 // left-column width for category labels
@@ -50,7 +50,7 @@ type scanModel struct {
 
 func newProgressBar() progress.Model {
 	return progress.New(
-		progress.WithDefaultGradient(),
+		progress.WithDefaultBlend(),
 		progress.WithWidth(barWidth),
 		progress.WithoutPercentage(),
 	)
@@ -108,9 +108,6 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch evt.Kind {
 		case engine.EventGroupStart:
 			m.categories[idx].status = "running"
-			// Animate the bar to 100%.
-			cmd := m.categories[idx].bar.SetPercent(1.0)
-			return m, cmd
 
 		case engine.EventGroupDone:
 			cat := &m.categories[idx]
@@ -127,6 +124,9 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			cat.status = "done"
+			// Animate the bar to 100% only after the group has finished.
+			cmd := cat.bar.SetPercent(1.0)
+			return m, cmd
 		}
 
 	case scanDoneMsg:
@@ -141,7 +141,7 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for i := range m.categories {
 			if m.categories[i].status == "running" {
 				model, cmd := m.categories[i].bar.Update(msg)
-				m.categories[i].bar = model.(progress.Model)
+				m.categories[i].bar = model
 				if cmd != nil {
 					cmds = append(cmds, cmd)
 				}
@@ -153,7 +153,7 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *scanModel) View() string {
+func (m *scanModel) View() tea.View {
 	var b strings.Builder
 
 	labelStyle := lipgloss.NewStyle().Width(categoryWidth)
@@ -190,7 +190,7 @@ func (m *scanModel) View() string {
 		b.WriteString("\n")
 	}
 
-	return b.String()
+	return tea.NewView(b.String())
 }
 
 // runScan returns a tea.Cmd that runs the engine evaluation in a goroutine.

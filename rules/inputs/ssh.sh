@@ -35,16 +35,17 @@ key_json="$key_json]"
 config_exists=false
 [ -f "$ssh_dir/config" ] && config_exists=true
 
-# Parse SSH config for risky settings.
+# Parse SSH config for risky settings. Strip comments before matching.
 strict_host_key_checking_disabled=false
 forward_agent_global=false
 if [ "$config_exists" = true ]; then
+  uncommented=$(sed -e 's/[[:space:]]*#.*$//' "$ssh_dir/config" 2>/dev/null)
   # Check for StrictHostKeyChecking no (any Host section).
-  if grep -i "StrictHostKeyChecking" "$ssh_dir/config" 2>/dev/null | grep -qi "no"; then
+  if printf '%s\n' "$uncommented" | grep -qiE '^[[:space:]]*StrictHostKeyChecking[[:space:]]+no([[:space:]]|$)'; then
     strict_host_key_checking_disabled=true
   fi
   # Check for ForwardAgent yes in global (Host *) context.
-  if awk '/^Host \*/{found=1; next} /^Host /{found=0} found && /ForwardAgent.*yes/i{print; exit}' "$ssh_dir/config" 2>/dev/null | grep -qi "yes"; then
+  if printf '%s\n' "$uncommented" | awk 'BEGIN{IGNORECASE=1} /^[[:space:]]*Host[[:space:]]+\*[[:space:]]*$/{found=1; next} /^[[:space:]]*Host[[:space:]]/{found=0} found && /^[[:space:]]*ForwardAgent[[:space:]]+yes([[:space:]]|$)/{print; exit}' | grep -qi "yes"; then
     forward_agent_global=true
   fi
 fi

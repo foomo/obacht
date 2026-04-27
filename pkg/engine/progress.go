@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/franklinkim/bouncer/pkg/schema"
+import "github.com/foomo/obacht/pkg/schema"
 
 // ProgressKind identifies the type of progress event.
 type ProgressKind int

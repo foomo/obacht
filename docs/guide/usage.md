@@ -2,12 +2,12 @@
 
 ## Commands
 
-### `bouncer scan`
+### `obacht scan`
 
 Scan the local development environment for security issues.
 
 ```bash
-bouncer scan [flags]
+obacht scan [flags]
 ```
 
 **Flags:**
@@ -22,18 +22,18 @@ bouncer scan [flags]
 - `1` — One or more failed checks
 - `2` — Runtime error
 
-### `bouncer explain <rule-id>`
+### `obacht explain <rule-id>`
 
 Show detailed information about a specific rule.
 
 ```bash
-bouncer explain SSH001
+obacht explain SSH001
 ```
 
-### `bouncer doctor`
+### `obacht doctor`
 
-Check bouncer dependencies and configuration.
+Check obacht dependencies and configuration.
 
 ```bash
-bouncer doctor
+obacht doctor
 ```

@@ -5,25 +5,25 @@
 ### Using mise (recommended)
 
 ```bash
-mise install bouncer
+mise install obacht
 ```
 
 ### Using Homebrew
 
 ```bash
-brew install franklinkim/tap/bouncer
+brew install franklinkim/tap/obacht
 ```
 
 ### From Source
 
 ```bash
-go install github.com/franklinkim/bouncer/cmd/bouncer@latest
+go install github.com/foomo/obacht/cmd/obacht@latest
 ```
 
 Verify your setup:
 
 ```bash
-bouncer doctor
+obacht doctor
 ```
 
 ## First Scan
@@ -31,17 +31,17 @@ bouncer doctor
 Run a full scan of your development environment:
 
 ```bash
-bouncer scan
+obacht scan
 ```
 
 For JSON output:
 
 ```bash
-bouncer scan --format json
+obacht scan --format json
 ```
 
 Filter by category:
 
 ```bash
-bouncer scan --category ssh,git
+obacht scan --category ssh,git
 ```

@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/franklinkim/bouncer/pkg/engine"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/pkg/engine"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
-var testPolicy = `package bouncer.test
+var testPolicy = `package obacht.test
 
 import rego.v1
 

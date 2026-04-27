@@ -7,15 +7,15 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/franklinkim/bouncer/internal/runner"
+	"github.com/foomo/obacht/internal/runner"
 )
 
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
-	Short: "Check bouncer dependencies and configuration",
+	Short: "Check obacht dependencies and configuration",
 	RunE:  runDoctor,
 }
 
@@ -30,7 +30,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 
-	fmt.Println(boldStyle.Render("Bouncer Doctor"))
+	fmt.Println(boldStyle.Render("obacht Doctor"))
 	fmt.Println(boldStyle.Render("=============="))
 	fmt.Println()
 

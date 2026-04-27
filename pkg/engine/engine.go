@@ -3,12 +3,14 @@ package engine
 import (
 	"context"
 	"fmt"
+	"slices"
+	"sort"
 	"strings"
 
 	"github.com/open-policy-agent/opa/v1/rego"
 
-	"github.com/franklinkim/bouncer/internal/runner"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/internal/runner"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 // opaFinding represents a single finding from an OPA evaluation.
@@ -82,36 +84,63 @@ func groupCategory(g ruleGroup) string {
 	return "unknown"
 }
 
-// buildRuleGroups organizes rules into groups that share the same input and policy.
+// buildRuleGroups organizes rules into groups that share the same input.
+// Rules within a RulesFile that resolve to the same input script are merged
+// into a single group — their effective policies are concatenated into one
+// rego module so the input runs once and OPA evaluates once per group.
+//
+// Rules whose effective policy declares its own `package` are isolated into
+// their own groups, since concatenating multiple package declarations would
+// produce an invalid module.
 func buildRuleGroups(ruleFiles []schema.RulesFile) []ruleGroup {
 	var groups []ruleGroup
 
 	for _, rf := range ruleFiles {
-		// Collect rules that use the file-level input/policy.
-		var fileLevelRules []schema.Rule
+		type bucket struct {
+			input    string
+			rules    []schema.Rule
+			policies []string
+			category string
+		}
+
+		var order []string
+
+		buckets := map[string]*bucket{}
 
 		for _, rule := range rf.Rules {
-			if rule.Input != "" || rule.Policy != "" {
-				// Rule has its own input/policy — it's its own group.
+			input := resolveField(rule.Input, rf.Input)
+			policy := resolveField(rule.Policy, rf.Policy)
+
+			if strings.HasPrefix(strings.TrimSpace(policy), "package ") {
 				groups = append(groups, ruleGroup{
-					Input:  resolveField(rule.Input, rf.Input),
-					Policy: preparePolicy(resolveField(rule.Policy, rf.Policy), rule.Category),
+					Input:  input,
+					Policy: preparePolicy(policy, rule.Category),
 					Rules:  []schema.Rule{rule},
 				})
-			} else {
-				fileLevelRules = append(fileLevelRules, rule)
+
+				continue
+			}
+
+			b, ok := buckets[input]
+			if !ok {
+				b = &bucket{input: input, category: rule.Category}
+				buckets[input] = b
+				order = append(order, input)
+			}
+
+			b.rules = append(b.rules, rule)
+
+			if policy != "" && !slices.Contains(b.policies, policy) {
+				b.policies = append(b.policies, policy)
 			}
 		}
 
-		if len(fileLevelRules) > 0 {
-			cat := ""
-			if len(fileLevelRules) > 0 {
-				cat = fileLevelRules[0].Category
-			}
+		for _, key := range order {
+			b := buckets[key]
 			groups = append(groups, ruleGroup{
-				Input:  rf.Input,
-				Policy: preparePolicy(rf.Policy, cat),
-				Rules:  fileLevelRules,
+				Input:  b.input,
+				Policy: preparePolicy(strings.Join(b.policies, "\n\n"), b.category),
+				Rules:  b.rules,
 			})
 		}
 	}
@@ -137,7 +166,7 @@ func preparePolicy(policy, category string) string {
 		pkg = "default"
 	}
 
-	return fmt.Sprintf("package bouncer.%s\nimport rego.v1\n\n%s", pkg, policy)
+	return fmt.Sprintf("package obacht.%s\nimport rego.v1\n\n%s", pkg, policy)
 }
 
 // resolveField returns the rule-level value if set, otherwise the file-level fallback.
@@ -205,10 +234,12 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 		return nil, err
 	}
 
-	// Build finding set keyed by rule_id.
-	findingMap := make(map[string]opaFinding)
+	// Group findings by rule_id. A single rule may produce multiple findings
+	// (e.g., one per offending PATH dir); aggregate their evidence strings so
+	// callers see every match rather than an arbitrary one.
+	findingMap := make(map[string][]opaFinding)
 	for _, f := range findings {
-		findingMap[f.RuleID] = f
+		findingMap[f.RuleID] = append(findingMap[f.RuleID], f)
 	}
 
 	// Build check results.
@@ -221,9 +252,14 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 			Remediation: rule.Remediation,
 		}
 
-		if f, found := findingMap[rule.ID]; found {
+		if fs, found := findingMap[rule.ID]; found {
 			cr.Status = schema.StatusFail
-			cr.Evidence = f.Evidence
+			parts := make([]string, 0, len(fs))
+			for _, f := range fs {
+				parts = append(parts, f.Evidence)
+			}
+			sort.Strings(parts)
+			cr.Evidence = strings.Join(parts, "; ")
 		} else {
 			cr.Status = schema.StatusPass
 		}
@@ -237,7 +273,7 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 // evalRego evaluates a rego policy string against the given input data.
 func evalRego(ctx context.Context, policy string, input any) ([]opaFinding, error) {
 	opts := []func(*rego.Rego){
-		rego.Query("data.bouncer"),
+		rego.Query("data.obacht"),
 		rego.Input(input),
 		rego.Module("policy.rego", policy),
 	}

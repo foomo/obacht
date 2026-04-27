@@ -1,7 +1,7 @@
 ---
 layout: home
 hero:
-  name: Bouncer
+  name: obacht
   text: Security Scanner for Developer Environments
   tagline: Inspect your local development setup for security misconfigurations using OPA/Rego policies
   actions:

@@ -1,4 +1,4 @@
-# Bouncer CLI — Phase 1 (MVP) Implementation Plan
+# obacht CLI — Phase 1 (MVP) Implementation Plan
 
 ## Context
 
@@ -8,8 +8,8 @@ Greenfield Go CLI that inspects developer environments for security misconfigura
 
 | Decision | Choice |
 |---|---|
-| CLI name | `bouncer` |
-| Go module | `github.com/franklinkim/bouncer`, Go 1.22+ |
+| CLI name | `obacht` |
+| Go module | `github.com/foomo/obacht`, Go 1.22+ |
 | CLI framework | `github.com/spf13/cobra` |
 | Policy engine | External OPA binary (>= v1.0.0), invoked via `opa eval` |
 | Policy embedding | `embed.FS` for built-in policies, `--rules-dir` for external |
@@ -40,7 +40,7 @@ Greenfield Go CLI that inspects developer environments for security misconfigura
 ## Directory Layout
 
 ```
-cmd/bouncer/main.go
+cmd/obacht/obacht.go
 pkg/
   schema/       facts.go, findings.go        (public API)
   engine/       engine.go                     (public API)
@@ -67,7 +67,7 @@ Makefile
 ```
 collectors (concurrent, errgroup) → Facts JSON (schema v1.0)
   → write to temp dir (0700) alongside .rego files
-  → single `opa eval -d <dir> -i <facts.json> 'data.bouncer[_].findings[_]'`
+  → single `opa eval -d <dir> -i <facts.json> 'data.obacht[_].findings[_]'`
   → parse OPA JSON output → diff against full rule ID list from rules.yaml
   → CheckResult per rule: pass (not in findings), fail (in findings), skip/error (from collector status)
   → reporter (lipgloss/bubbletea for TTY pretty, plain JSON otherwise)
@@ -147,16 +147,16 @@ Each step is a standalone milestone. Run security checks (golangci-lint with gos
 **Goal**: Buildable binary with `--help`, all tooling configured.
 
 - `.mise.toml` — Go 1.22+, golangci-lint, opa (>= 1.0.0), bun
-- `go.mod` with module `github.com/franklinkim/bouncer`
+- `go.mod` with module `github.com/foomo/obacht`
 - `go get` all dependencies
-- `cmd/bouncer/main.go` → calls `cli.Execute()`
+- `cmd/obacht/obacht.go` → calls `cli.Execute()`
 - `internal/cli/root.go` — cobra root with `--format`, `--verbose`, `--rules-dir` flags
 - `internal/cli/exitcodes.go` — OK=0, Findings=1, Error=2
 - `internal/preflight/opa.go` — check OPA binary in PATH, version check, install hint
 - `.golangci.yml` — enable gosec, govet, staticcheck, errcheck, revive
 - `Makefile` — build, test, lint, run, test-rego targets
 - **Sub-agents**: scaffolding code + mise/lint config in parallel
-- **Verify**: `mise install && make build && ./bin/bouncer --help && make lint`
+- **Verify**: `mise install && make build && ./bin/obacht --help && make lint`
 
 ---
 
@@ -207,7 +207,7 @@ Each step is a standalone milestone. Run security checks (golangci-lint with gos
 - Rego tests with fixture JSON
 - CI test: every rule ID in YAML must exist in Rego, and vice versa
 - Wire up `scan` command minimally (collect → evaluate → print JSON for now)
-- **Verify**: `make test && make test-rego && make lint && ./bin/bouncer scan --format json`
+- **Verify**: `make test && make test-rego && make lint && ./bin/obacht scan --format json`
 
 ---
 
@@ -220,7 +220,7 @@ Each step is a standalone milestone. Run security checks (golangci-lint with gos
 - TTY detection: TTY + pretty → Bubble Tea; non-TTY or JSON → plain output
 - Bubbles table for doctor command output
 - **Sub-agents**: pretty reporter + JSON reporter in parallel
-- **Verify**: `make test && make lint && ./bin/bouncer scan` (pretty) and `./bin/bouncer scan --format json`
+- **Verify**: `make test && make lint && ./bin/obacht scan` (pretty) and `./bin/obacht scan --format json`
 
 ---
 
@@ -250,7 +250,7 @@ Each step is a standalone milestone. Run security checks (golangci-lint with gos
 | `path.rego` | PTH001, PTH002 | Writable PATH dir; relative PATH entry |
 | `os.rego` | OS001 | Stale OS updates |
 
-- **Verify**: `make test && make test-rego && make lint && ./bin/bouncer scan`
+- **Verify**: `make test && make test-rego && make lint && ./bin/obacht scan`
 
 ---
 
@@ -258,9 +258,9 @@ Each step is a standalone milestone. Run security checks (golangci-lint with gos
 **Goal**: Complete CLI command set.
 
 - `internal/cli/explain.go` — takes rule ID, looks up metadata from rules YAML, prints title, severity, description, remediation
-- `internal/cli/doctor.go` — full diagnostic: OPA binary + version, policy validation (YAML/Rego parse + ID sync), collector health (run each, report ok/skipped/error), system info (OS, arch, shell, bouncer version). Output via bubbles table.
+- `internal/cli/doctor.go` — full diagnostic: OPA binary + version, policy validation (YAML/Rego parse + ID sync), collector health (run each, report ok/skipped/error), system info (OS, arch, shell, obacht version). Output via bubbles table.
 - `scan` command gets `--category` flag to filter
-- **Verify**: `./bin/bouncer explain SSH001 && ./bin/bouncer doctor && make lint`
+- **Verify**: `./bin/obacht explain SSH001 && ./bin/obacht doctor && make lint`
 
 ---
 
@@ -278,7 +278,7 @@ docs/
   public/
     logo.png
   package.json (bun)
-  index.md                 — landing page (what is bouncer)
+  index.md                 — landing page (what is obacht)
   guide/
     getting-started.md     — install (mise, brew), first scan
     usage.md               — commands, flags, output formats
@@ -338,12 +338,12 @@ GitHub Actions (mirroring foomo/go pattern):
 
 ## CLI Commands
 
-- `bouncer scan` — collect facts, evaluate policies, report all checks
-- `bouncer scan --format json` — machine-readable output
-- `bouncer scan --category ssh,git` — filter by category
-- `bouncer scan --rules-dir ./my-rules` — load external rules (override on ID collision)
-- `bouncer explain SSH001` — detailed rule explanation from YAML metadata
-- `bouncer doctor` — full diagnostic (OPA, policies, collectors, system info)
+- `obacht scan` — collect facts, evaluate policies, report all checks
+- `obacht scan --format json` — machine-readable output
+- `obacht scan --category ssh,git` — filter by category
+- `obacht scan --rules-dir ./my-rules` — load external rules (override on ID collision)
+- `obacht explain SSH001` — detailed rule explanation from YAML metadata
+- `obacht doctor` — full diagnostic (OPA, policies, collectors, system info)
 
 ## Exit Codes
 

@@ -14,7 +14,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "bouncer",
+	Use:   "obacht",
 	Short: "Security configuration scanner for developer environments",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		switch format {

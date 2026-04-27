@@ -1,5 +1,5 @@
 {
-  "name": "bouncer-docs",
+  "name": "obacht-docs",
   "private": true,
   "scripts": {
     "dev": "vitepress dev",

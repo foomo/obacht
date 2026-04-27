@@ -232,7 +232,7 @@ rules:
       }
   - id: OS018
     title: No EDR agent deployed
-    severity: critical
+    severity: warn
     category: os
     description: |
       An Endpoint Detection & Response agent provides real-time
@@ -246,7 +246,7 @@ rules:
       }
   - id: OS019
     title: Legacy kernel extensions are not blocked
-    severity: high
+    severity: warn
     category: os
     description: |
       Legacy kernel extensions (kexts) run with full kernel privileges
@@ -260,7 +260,7 @@ rules:
       }
   - id: OS020
     title: Device is not enrolled in MDM
-    severity: high
+    severity: info
     category: os
     description: |
       MDM enrollment enables centralized security policy enforcement,

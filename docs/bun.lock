@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "bouncer-docs",
+      "name": "obacht-docs",
       "devDependencies": {
         "vitepress": "^1.6.3",
         "vue": "^3.5.13",

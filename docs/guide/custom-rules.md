@@ -1,6 +1,6 @@
 # Custom Rules
 
-Bouncer supports loading custom rules from an external directory using the `--rules-dir` flag. Each rule is defined in a YAML file with metadata and a Rego policy. Input scripts can be defined inline or in separate files.
+obacht supports loading custom rules from an external directory using the `--rules-dir` flag. Each rule is defined in a YAML file with metadata and a Rego policy. Input scripts can be defined inline or in separate files.
 
 ## Directory Structure
 
@@ -23,7 +23,7 @@ my-rules/
 
 A rule file is a YAML file with:
 
-- **`input`** (file-level, optional) — An inline shell script that collects facts and outputs JSON to stdout, shared by all rules in the file. If omitted, bouncer looks for a matching script in the `inputs/` directory.
+- **`input`** (file-level, optional) — An inline shell script that collects facts and outputs JSON to stdout, shared by all rules in the file. If omitted, obacht looks for a matching script in the `inputs/` directory.
 - **`rules`** — A list of rules, each with metadata and its own Rego policy
 
 Each rule contains:
@@ -33,7 +33,7 @@ Each rule contains:
 - **`policy`** — Rego policy for this specific rule (inline or file reference)
 - **`input`** (optional) — Rule-specific input script, overrides file-level input
 
-> **Auto-prefix:** The Rego `package bouncer.<category>` declaration and `import rego.v1` are automatically prepended based on the rule's `category` field. You only need to write the policy body (e.g. `findings contains f if { ... }`). If your policy already contains a `package` declaration, it is used as-is.
+> **Auto-prefix:** The Rego `package obacht.<category>` declaration and `import rego.v1` are automatically prepended based on the rule's `category` field. You only need to write the policy body (e.g. `findings contains f if { ... }`). If your policy already contains a `package` declaration, it is used as-is.
 
 ### Example: Single rule
 
@@ -158,5 +158,5 @@ External rules with the same ID as built-in rules will override them. This allow
 ## Usage
 
 ```bash
-bouncer scan --rules-dir ./my-rules
+obacht scan --rules-dir ./my-rules
 ```

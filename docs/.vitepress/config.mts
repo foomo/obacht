@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'Bouncer',
+  title: 'obacht',
   description: 'Security configuration scanner for developer environments',
-  base: '/bouncer/',
+  base: '/obacht/',
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
@@ -23,6 +23,7 @@ export default defineConfig({
         text: 'Rules',
         items: [
           { text: 'Overview', link: '/rules/' },
+          { text: 'Claude', link: '/rules/claude' },
           { text: 'Credentials', link: '/rules/credentials' },
           { text: 'Docker', link: '/rules/docker' },
           { text: 'Environment', link: '/rules/env' },
@@ -42,7 +43,7 @@ export default defineConfig({
       },
     ],
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/franklinkim/bouncer' },
+      { icon: 'github', link: 'https://github.com/foomo/obacht' },
     ],
   },
 })

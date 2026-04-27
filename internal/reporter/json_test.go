@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/franklinkim/bouncer/internal/reporter"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/internal/reporter"
+	"github.com/foomo/obacht/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

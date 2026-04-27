@@ -82,28 +82,28 @@ outdated:
 .PHONY: build
 ## Build binary
 build:
-	@echo "〉go build bin/bouncer"
-	@rm -f bin/bouncer
-	@go build -o bin/bouncer cmd/bouncer/main.go
+	@echo "〉go build bin/obacht"
+	@rm -f bin/obacht
+	@go build -o bin/obacht cmd/obacht/obacht.go
 
 .PHONY: build.debug
 ## Build binary in debug mode
 build.debug:
-	@echo "〉go build bin/bouncer (debug)"
-	@rm -f bin/bouncer
-	@go build -gcflags "all=-N -l" -o bin/bouncer cmd/bouncer/main.go
+	@echo "〉go build bin/obacht (debug)"
+	@rm -f bin/obacht
+	@go build -gcflags "all=-N -l" -o bin/obacht cmd/obacht/obacht.go
 
 .PHONY: install
 ## Run go install
 install:
-	@echo "〉installing bouncer"
-	@go install cmd/bouncer/main.go
+	@echo "〉installing obacht"
+	@go install cmd/obacht/obacht.go
 
 .PHONY: install.debug
 ## Run go install with debug
 install.debug:
-	@echo "〉installing bouncer (debug)"
-	@go install -gcflags "all=-N -l" cmd/bouncer/main.go
+	@echo "〉installing obacht (debug)"
+	@go install -gcflags "all=-N -l" cmd/obacht/obacht.go
 
 .PHONY: generate
 ## Run go generate
@@ -136,7 +136,7 @@ godocs:
 .PHONY: help
 ## Show help text
 help:
-	@echo "bouncer\n"
+	@echo "obacht\n"
 	@echo "Usage:\n  make [task]"
 	@awk '{ \
 		if($$0 ~ /^### /){ \

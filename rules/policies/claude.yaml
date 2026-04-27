@@ -17,3 +17,85 @@ rules:
           "evidence": "Global gitignore does not exclude **/.claude/settings.local.json",
         }
       }
+  - id: CLD002
+    title: Claude Code autoCompactEnabled is not disabled
+    severity: warn
+    category: claude
+    description: |
+      Claude Code's auto-compact feature silently rewrites conversation
+      context when token budgets are reached, which can drop critical
+      details. Disabling it gives the user explicit control over when
+      compaction happens.
+    remediation: 'Set "autoCompactEnabled": false in ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json)'
+    policy: |
+      findings contains f if {
+        input.installed
+        input.config_present
+        input.auto_compact_enabled != "false"
+        f := {
+          "rule_id": "CLD002",
+          "evidence": sprintf("autoCompactEnabled is %s, expected false", [input.auto_compact_enabled]),
+        }
+      }
+  - id: CLD003
+    title: Claude Code prStatusFooterEnabled is not disabled
+    severity: warn
+    category: claude
+    description: |
+      The PR status footer makes outbound calls to GitHub to display PR
+      status in the CLI footer. Disabling it reduces network chatter and
+      avoids leaking working-directory metadata to remote services when
+      not needed.
+    remediation: 'Set "prStatusFooterEnabled": false in ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json)'
+    policy: |
+      findings contains f if {
+        input.installed
+        input.config_present
+        input.pr_status_footer_enabled != "false"
+        f := {
+          "rule_id": "CLD003",
+          "evidence": sprintf("prStatusFooterEnabled is %s, expected false", [input.pr_status_footer_enabled]),
+        }
+      }
+  - id: CLD004
+    title: Claude Code claudeInChromeDefaultEnabled is not disabled
+    severity: warn
+    category: claude
+    description: |
+      The Claude-in-Chrome integration injects Claude into the default
+      browser. Disabling the default-enable flag prevents unintended
+      browser instrumentation and keeps Claude Code scoped to the
+      terminal until explicitly opted in.
+    remediation: 'Set "claudeInChromeDefaultEnabled": false in ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json)'
+    policy: |
+      findings contains f if {
+        input.installed
+        input.config_present
+        input.claude_in_chrome_default_enabled != "false"
+        f := {
+          "rule_id": "CLD004",
+          "evidence": sprintf("claudeInChromeDefaultEnabled is %s, expected false", [input.claude_in_chrome_default_enabled]),
+        }
+      }
+  - id: CLD005
+    title: Claude Code sandbox.failIfUnavailable is not enabled
+    severity: high
+    category: claude
+    description: |
+      When sandbox.failIfUnavailable is false (or unset), Claude Code
+      will silently run without the platform sandbox if it cannot be
+      initialized, removing a key isolation boundary. Setting it to
+      true forces Claude Code to fail closed when the sandbox is
+      unavailable, ensuring tool execution always runs under the
+      expected confinement.
+    remediation: 'Set "sandbox": {"failIfUnavailable": true} in ~/.claude.json (or $CLAUDE_CONFIG_DIR/.claude.json)'
+    policy: |
+      findings contains f if {
+        input.installed
+        input.config_present
+        input.sandbox_fail_if_unavailable != "true"
+        f := {
+          "rule_id": "CLD005",
+          "evidence": sprintf("sandbox.failIfUnavailable is %s, expected true", [input.sandbox_fail_if_unavailable]),
+        }
+      }

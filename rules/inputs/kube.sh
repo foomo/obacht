@@ -58,5 +58,5 @@ fi
 
 contexts="$contexts]"
 
-printf '{"config_exists": true, "config_mode": "0%s", "contexts": %s}' \
+printf '{"config_exists": true, "config_mode": "%s", "contexts": %s}' \
   "$config_mode" "$contexts"

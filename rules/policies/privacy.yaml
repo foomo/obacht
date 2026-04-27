@@ -36,7 +36,7 @@ rules:
       }
   - id: PRV003
     title: Encrypted DNS is not configured
-    severity: info
+    severity: warn
     category: privacy
     description: |
       DNS-over-HTTPS or DNS-over-TLS encrypts DNS queries, preventing
@@ -49,5 +49,40 @@ rules:
         f := {
           "rule_id": "PRV003",
           "evidence": "No encrypted DNS (DoH/DoT) configuration detected",
+        }
+      }
+  - id: PRV004
+    title: Untrusted DNS resolver is configured
+    severity: warn
+    category: privacy
+    description: |
+      The active DNS resolvers are not on the allowlist of
+      privacy-respecting providers (Cloudflare 1.1.1.1, Quad9 9.9.9.9,
+      Google 8.8.8.8, AdGuard, Mullvad, NextDNS, OpenDNS, or loopback).
+      ISP or router-provided resolvers can log and monetize browsing
+      activity, and may inject DNS-level redirects or telemetry.
+    remediation: |
+      Set DNS to a trusted resolver in System Settings > Network > Wi-Fi/Ethernet > Details > DNS.
+      Recommended IPs:
+        Cloudflare: 1.1.1.1, 1.0.0.1
+        Quad9:      9.9.9.9, 149.112.112.112
+        Google:     8.8.8.8, 8.8.4.4
+        AdGuard:    94.140.14.14, 94.140.15.15
+        Mullvad:    194.242.2.2
+    policy: |
+      findings contains f if {
+        not input.trusted_dns
+        count(input.dns_servers) > 0
+        f := {
+          "rule_id": "PRV004",
+          "evidence": sprintf("Untrusted DNS resolver(s): %s", [input.untrusted_dns_servers]),
+        }
+      }
+      findings contains f if {
+        not input.trusted_dns
+        count(input.dns_servers) == 0
+        f := {
+          "rule_id": "PRV004",
+          "evidence": "No DNS resolvers detected via scutil --dns",
         }
       }

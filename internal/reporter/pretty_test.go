@@ -2,14 +2,21 @@ package reporter_test
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/franklinkim/bouncer/internal/reporter"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"github.com/foomo/obacht/internal/reporter"
+	"github.com/foomo/obacht/pkg/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+func stripANSI(s string) string {
+	return ansiRe.ReplaceAllString(s, "")
+}
 
 func sampleScanResult() *schema.ScanResult {
 	results := []schema.CheckResult{
@@ -54,14 +61,72 @@ func sampleScanResult() *schema.ScanResult {
 func TestPrettyReporter_ContainsPassMarker(t *testing.T) {
 	var buf bytes.Buffer
 
+	r := &reporter.PrettyReporter{ShowPassing: true}
+	err := r.Report(&buf, sampleScanResult())
+	require.NoError(t, err)
+
+	out := buf.String()
+
+	// Pass marker (checkmark) should be present when ShowPassing is enabled.
+	assert.Contains(t, out, "\u2713")
+}
+
+func TestPrettyReporter_HidesPassByDefault(t *testing.T) {
+	var buf bytes.Buffer
+
 	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
 
 	out := buf.String()
 
-	// Pass marker (checkmark) should be present.
-	assert.Contains(t, out, "\u2713")
+	// Pass marker and the passing rule must not appear in the per-check listing.
+	assert.NotContains(t, out, "\u2713")
+	assert.NotContains(t, out, "SSH002")
+
+	// Failing/skip/error checks still render.
+	assert.Contains(t, out, "SSH001")
+	assert.Contains(t, out, "GIT001")
+	assert.Contains(t, out, "GIT002")
+
+	// Summary line still reflects the full counts including the hidden pass.
+	assert.Contains(t, out, "1 passed")
+}
+
+func TestPrettyReporter_SkipsEmptyCategoryHeader(t *testing.T) {
+	results := []schema.CheckResult{
+		{
+			RuleID:   "TOOL001",
+			Title:    "tool installed",
+			Severity: schema.SeverityInfo,
+			Category: "Tools",
+			Status:   schema.StatusPass,
+		},
+		{
+			RuleID:      "SSH001",
+			Title:       "SSH private key permissions",
+			Severity:    schema.SeverityCritical,
+			Category:    "SSH",
+			Status:      schema.StatusFail,
+			Evidence:    "~/.ssh has mode 0755",
+			Remediation: "Run: chmod 700 ~/.ssh",
+		},
+	}
+	sr := schema.NewScanResult(results)
+
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, &sr)
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	// The Tools category is all-pass, so its header must not be rendered.
+	assert.NotContains(t, out, "Tools")
+	// The SSH category still appears.
+	assert.Contains(t, out, "SSH")
+	assert.Contains(t, out, "SSH001")
 }
 
 func TestPrettyReporter_ContainsFailMarker(t *testing.T) {
@@ -80,7 +145,7 @@ func TestPrettyReporter_ContainsFailMarker(t *testing.T) {
 func TestPrettyReporter_ContainsRuleIDs(t *testing.T) {
 	var buf bytes.Buffer
 
-	r := reporter.NewPrettyReporter()
+	r := &reporter.PrettyReporter{ShowPassing: true}
 	err := r.Report(&buf, sampleScanResult())
 	require.NoError(t, err)
 
@@ -132,7 +197,7 @@ func TestPrettyReporter_SkipMarker(t *testing.T) {
 	out := buf.String()
 
 	// Skip uses a dash.
-	assert.Contains(t, out, "- GIT001")
+	assert.Contains(t, stripANSI(out), "- GIT001")
 }
 
 func TestPrettyReporter_ErrorMarker(t *testing.T) {
@@ -144,7 +209,7 @@ func TestPrettyReporter_ErrorMarker(t *testing.T) {
 
 	out := buf.String()
 
-	assert.Contains(t, out, "! GIT002 [high]")
+	assert.Contains(t, stripANSI(out), "! GIT002 [high]")
 }
 
 func TestPrettyReporter_GroupsByCategory(t *testing.T) {

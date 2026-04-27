@@ -25,7 +25,7 @@ bool_check() {
 sip=$(bool_check csrutil status "" "" "" "" "enabled")
 filevault=$(bool_check fdesetup status "" "" "" "" "On")
 firewall=$(bool_check /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate "" "" "" "enabled")
-stealth=$(bool_check /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode "" "" "" "enabled")
+stealth=$(bool_check /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode "" "" "" "on")
 gatekeeper=$(bool_check spctl --status "" "" "" "enabled")
 
 # AutoLogin: if defaults read succeeds, auto-login IS enabled (bad).
@@ -109,9 +109,12 @@ if systemsetup -getremotelogin 2>/dev/null | grep -qi "on"; then
   remote_login_disabled=false
 fi
 
-# Remote Management.
+# Remote Management. The ARD agent may be loaded with OnDemand=true (registered
+# but not actively running). Only treat it as enabled when an actual PID is
+# attached — `launchctl list <label>` returns success for any loaded job.
 remote_management_disabled=true
-if launchctl list com.apple.RemoteDesktop.agent >/dev/null 2>&1; then
+ard_pid=$(launchctl list 2>/dev/null | awk '$3 == "com.apple.RemoteDesktop.agent" {print $1; exit}')
+if [ -n "$ard_pid" ] && [ "$ard_pid" != "-" ]; then
   remote_management_disabled=false
 fi
 

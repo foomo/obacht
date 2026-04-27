@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/franklinkim/bouncer/pkg/schema"
+	"charm.land/lipgloss/v2"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 // severityOrder maps severity to a sort rank (lower = more severe).
@@ -19,7 +19,12 @@ var severityOrder = map[schema.Severity]int{
 }
 
 // PrettyReporter renders a human-friendly, coloured report using lipgloss.
-type PrettyReporter struct{}
+type PrettyReporter struct {
+	// ShowPassing controls whether checks with status=pass are rendered.
+	// When false (default), passing checks are omitted from the per-check
+	// listing; the summary line still reflects the full counts.
+	ShowPassing bool
+}
 
 // NewPrettyReporter creates a new PrettyReporter.
 func NewPrettyReporter() *PrettyReporter {
@@ -30,7 +35,6 @@ func NewPrettyReporter() *PrettyReporter {
 func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	// Styles.
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
-	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	yellowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	boldStyle := lipgloss.NewStyle().Bold(true)
 
@@ -61,21 +65,41 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	for _, cat := range categoryOrder {
 		checks := groups[cat]
 
+		// Skip the category entirely if every check would be filtered out.
+		if !p.ShowPassing {
+			anyVisible := false
+
+			for _, cr := range checks {
+				if cr.Status != schema.StatusPass {
+					anyVisible = true
+					break
+				}
+			}
+
+			if !anyVisible {
+				continue
+			}
+		}
+
 		// Category header.
 		fmt.Fprintln(w, boldStyle.Render(cat))
 
 		for _, cr := range checks {
+			if cr.Status == schema.StatusPass && !p.ShowPassing {
+				continue
+			}
+
 			var icon string
 
 			switch cr.Status {
 			case schema.StatusPass:
 				icon = greenStyle.Render("\u2713")
 			case schema.StatusFail:
-				icon = redStyle.Render("\u2717")
+				icon = SeverityColorStyle(cr.Severity).Render("\u2717")
 			case schema.StatusSkip:
 				icon = yellowStyle.Render("-")
 			case schema.StatusError:
-				icon = redStyle.Render("!")
+				icon = SeverityColorStyle(cr.Severity).Render("!")
 			}
 
 			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
