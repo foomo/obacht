@@ -335,6 +335,8 @@ func TestPrettyReporter_TrailingSeparator(t *testing.T) {
 
 	out := stripANSI(buf.String())
 
+	// Multi-part header is rendered (no inline value).
+	assert.Contains(t, out, "      Evidence:\n")
 	assert.Contains(t, out, "        - first finding\n")
 	assert.Contains(t, out, "        - second finding\n")
 	// Trailing empty part must not produce an empty bullet line.
