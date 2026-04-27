@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 59 built-in rules across 12 categories.
+obacht includes 98 built-in rules across 12 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -9,6 +9,45 @@ obacht includes 59 built-in rules across 12 categories.
 | CLD003 | Claude      | Claude Code prStatusFooterEnabled is not disabled    | warn     |
 | CLD004 | Claude      | Claude Code claudeInChromeDefaultEnabled is not disabled | warn     |
 | CLD005 | Claude      | Claude Code sandbox.failIfUnavailable is not enabled | high     |
+| CLD006 | Claude      | Claude Code DISABLE_COMPACT is not set in settings.json | warn     |
+| CLD007 | Claude      | Claude Code DISABLE_TELEMETRY is not set in settings.json | warn     |
+| CLD008 | Claude      | Claude Code DISABLE_BUG_COMMAND is not set in settings.json | warn     |
+| CLD009 | Claude      | Claude Code DISABLE_AUTO_COMPACT is not set in settings.json | warn     |
+| CLD010 | Claude      | Claude Code DISABLE_LOGIN_COMMAND is not set in settings.json | warn     |
+| CLD011 | Claude      | Claude Code DISABLE_LOGOUT_COMMAND is not set in settings.json | warn     |
+| CLD012 | Claude      | Claude Code DISABLE_ERROR_REPORTING is not set in settings.json | warn     |
+| CLD013 | Claude      | Claude Code DISABLE_UPGRADE_COMMAND is not set in settings.json | warn     |
+| CLD014 | Claude      | Claude Code DISABLE_FEEDBACK_COMMAND is not set in settings.json | warn     |
+| CLD015 | Claude      | Claude Code DISABLE_EXTRA_USAGE_COMMAND is not set in settings.json | warn     |
+| CLD016 | Claude      | Claude Code CLAUDE_CODE_DISABLE_FAST_MODE is not set in settings.json | warn     |
+| CLD017 | Claude      | Claude Code DISABLE_INSTALL_GITHUB_APP_COMMAND is not set in settings.json | warn     |
+| CLD018 | Claude      | Claude Code CLAUDE_CODE_DISABLE_CRON is not set in settings.json | warn     |
+| CLD019 | Claude      | Claude Code CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY is not set in settings.json | warn     |
+| CLD020 | Claude      | Claude Code CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING is not set in settings.json | warn     |
+| CLD021 | Claude      | Claude Code CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS is not set in settings.json | warn     |
+| CLD022 | Claude      | Claude Code FORCE_AUTOUPDATE_PLUGINS is not set in settings.json | warn     |
+| CLD023 | Claude      | Claude Code IS_DEMO is not set in settings.json      | warn     |
+| CLD024 | Claude      | Claude Code disableAutoMode is not set to "disable" in settings.json | warn     |
+| CLD025 | Claude      | Claude Code disableDeepLinkRegistration is not set to "disable" in settings.json | warn     |
+| CLD026 | Claude      | Claude Code attribution.commit and attribution.pr are not empty in settings.json | warn     |
+| CLD027 | Claude      | Claude Code respectGitignore is not enabled in settings.json | warn     |
+| CLD028 | Claude      | Claude Code skipWebFetchPreflight is not enabled in settings.json | warn     |
+| CLD029 | Claude      | Claude Code autoMemoryDirectory is not set to ".claude/memory" in settings.json | warn     |
+| CLD030 | Claude      | Claude Code plansDirectory is not set to ".claude/plans" in settings.json | warn     |
+| CLD031 | Claude      | Claude Code sandbox.enabled is not true in settings.json | warn     |
+| CLD032 | Claude      | Claude Code sandbox.autoAllowBashIfSandboxed is not false in settings.json | warn     |
+| CLD033 | Claude      | Claude Code sandbox.allowUnsandboxedCommands is not false in settings.json | warn     |
+| CLD034 | Claude      | Claude Code sandbox.network.allowManagedDomainsOnly is not true in settings.json | warn     |
+| CLD035 | Claude      | Claude Code sandbox.network.allowedDomains does not include "github.com" | warn     |
+| CLD036 | Claude      | Claude Code sandbox.network.deniedDomains does not include "uploads.github.com" | warn     |
+| CLD037 | Claude      | Claude Code sandbox.filesystem.allowWrite does not include "~/.cache/npm/logs" | warn     |
+| CLD038 | Claude      | Claude Code sandbox.filesystem.allowWrite does not include "~/.config/claude/debug" | warn     |
+| CLD039 | Claude      | Claude Code permissions.disableBypassPermissionsMode is not "disable" in settings.json | high     |
+| CLD040 | Claude      | Claude Code permissions.deny missing network/exfiltration tool blocks | high     |
+| CLD041 | Claude      | Claude Code permissions.deny missing destructive filesystem command blocks | high     |
+| CLD042 | Claude      | Claude Code permissions.deny missing destructive git command blocks | warn     |
+| CLD043 | Claude      | Claude Code permissions.deny missing home credential directory blocks | high     |
+| CLD044 | Claude      | Claude Code permissions.deny missing project secret file blocks | high     |
 | CRD001 | Credentials | AWS credentials file has weak permissions            | high     |
 | CRD002 | Credentials | .netrc file has weak permissions                     | high     |
 | CRD003 | Credentials | GCP credentials file has weak permissions            | high     |

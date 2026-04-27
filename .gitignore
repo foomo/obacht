@@ -55,3 +55,6 @@ tmp/
 docs/.vitepress/*
 !docs/.vitepress/theme/
 !docs/.vitepress/config.mts
+
+## Docs (override global **/CLAUDE.md ignore for the Claude rules docs page)
+!docs/rules/claude.md
