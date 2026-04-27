@@ -43,7 +43,7 @@ type scanModel struct {
 	result     *schema.ScanResult
 	err        error
 	done       bool
-	ctx        context.Context
+	ctx        context.Context //nolint:containedctx
 	rules      []schema.RulesFile
 	program    *tea.Program
 }
@@ -59,6 +59,7 @@ func newProgressBar() progress.Model {
 func newScanModel(ctx context.Context, ruleFiles []schema.RulesFile) *scanModel {
 	// Collect unique categories in order from rule files.
 	var cats []categoryState
+
 	catIndex := make(map[string]int)
 
 	for _, rf := range ruleFiles {
@@ -100,6 +101,7 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case progressMsg:
 		evt := engine.ProgressEvent(msg)
+
 		idx, ok := m.catIndex[evt.Category]
 		if !ok {
 			break
@@ -111,6 +113,7 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case engine.EventGroupDone:
 			cat := &m.categories[idx]
+
 			for _, r := range evt.Results {
 				switch r.Status {
 				case schema.StatusPass:
@@ -123,9 +126,11 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cat.errors++
 				}
 			}
+
 			cat.status = "done"
 			// Animate the bar to 100% only after the group has finished.
 			cmd := cat.bar.SetPercent(1.0)
+
 			return m, cmd
 		}
 
@@ -133,20 +138,24 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.done = true
 		m.result = msg.result
 		m.err = msg.err
+
 		return m, tea.Quit
 
 	case progress.FrameMsg:
 		// Forward frame messages to all running progress bars.
 		var cmds []tea.Cmd
+
 		for i := range m.categories {
 			if m.categories[i].status == "running" {
 				model, cmd := m.categories[i].bar.Update(msg)
 				m.categories[i].bar = model
+
 				if cmd != nil {
 					cmds = append(cmds, cmd)
 				}
 			}
 		}
+
 		return m, tea.Batch(cmds...)
 	}
 

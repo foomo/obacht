@@ -121,6 +121,7 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 						fmt.Fprintf(w, "      Evidence: %s\n", parts[0])
 					default:
 						fmt.Fprintln(w, "      Evidence:")
+
 						for _, p := range parts {
 							fmt.Fprintf(w, "        - %s\n", p)
 						}

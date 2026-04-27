@@ -254,10 +254,12 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 
 		if fs, found := findingMap[rule.ID]; found {
 			cr.Status = schema.StatusFail
+
 			parts := make([]string, 0, len(fs))
 			for _, f := range fs {
 				parts = append(parts, f.Evidence)
 			}
+
 			sort.Strings(parts)
 			cr.Evidence = strings.Join(parts, "; ")
 		} else {

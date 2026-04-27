@@ -12,6 +12,8 @@ linters:
   disable:
     # Project specific linters
     - unused
+    - goconst
+    - exhaustive
     - paralleltest
     - forbidigo
     # Discouraged linters

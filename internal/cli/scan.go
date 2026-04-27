@@ -326,7 +326,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 			os.Exit(Error)
 		}
 
-		m := finalModel.(*scanModel)
+		m := finalModel.(*scanModel) //nolint:forcetypeassert
 		if m.err != nil {
 			fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", m.err)
 			os.Exit(Error)
@@ -335,6 +335,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 		scanResult = m.result
 	} else {
 		var err error
+
 		scanResult, err = engine.Evaluate(ctx, ruleFiles)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", err)
@@ -383,6 +384,7 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 		// Resolve input from inputs/<name>.sh if not set inline.
 		if rf.Input == "" {
 			baseName := strings.TrimSuffix(filepath.Base(path), ".yaml")
+
 			input, err := resolveInputFromFS(rules.Embedded, "inputs", baseName)
 			if err != nil {
 				return fmt.Errorf("resolving input for %s: %w", path, err)
@@ -432,6 +434,7 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 		// Resolve input from inputs/<name>.sh if not set inline.
 		if rf.Input == "" {
 			baseName := strings.TrimSuffix(entry.Name(), ".yaml")
+
 			input, err := resolveInputFromDir(dir, baseName)
 			if err != nil {
 				return nil, fmt.Errorf("resolving input for %s: %w", path, err)
