@@ -240,3 +240,34 @@ func TestPrettyReporter_SeveritySortWithinCategory(t *testing.T) {
 	git001Pos := strings.Index(out, "GIT001")
 	assert.Greater(t, git001Pos, git002Pos, "GIT002 (high) should appear before GIT001 (warn)")
 }
+
+func TestPrettyReporter_BulletsMultipleEvidence(t *testing.T) {
+	results := []schema.CheckResult{
+		{
+			RuleID:      "ENV001",
+			Title:       "Sensitive credentials found in environment variables",
+			Severity:    schema.SeverityHigh,
+			Category:    "Env",
+			Status:      schema.StatusFail,
+			Evidence:    "Suspicious env var: GITHUB_TOKEN (matched pattern: exact:GITHUB_TOKEN); Suspicious env var: JIRA_API_TOKEN (matched pattern: *_TOKEN)",
+			Remediation: "Use a secrets manager",
+		},
+	}
+	sr := schema.NewScanResult(results)
+
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, &sr)
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	// Header line on its own (no inline value).
+	assert.Contains(t, out, "      Evidence:\n")
+	// Each finding rendered as its own bullet, indented 8 spaces.
+	assert.Contains(t, out, "        - Suspicious env var: GITHUB_TOKEN (matched pattern: exact:GITHUB_TOKEN)\n")
+	assert.Contains(t, out, "        - Suspicious env var: JIRA_API_TOKEN (matched pattern: *_TOKEN)\n")
+	// The original joined wall-of-text must NOT appear on a single line.
+	assert.NotContains(t, out, "exact:GITHUB_TOKEN); Suspicious env var: JIRA_API_TOKEN")
+}

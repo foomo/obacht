@@ -113,7 +113,18 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 			// For failures and errors, show evidence and remediation.
 			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
 				if cr.Evidence != "" {
-					fmt.Fprintf(w, "      Evidence: %s\n", cr.Evidence)
+					parts := splitEvidence(cr.Evidence)
+					switch len(parts) {
+					case 0:
+						// All-whitespace evidence — render nothing.
+					case 1:
+						fmt.Fprintf(w, "      Evidence: %s\n", parts[0])
+					default:
+						fmt.Fprintln(w, "      Evidence:")
+						for _, p := range parts {
+							fmt.Fprintf(w, "        - %s\n", p)
+						}
+					}
 				}
 
 				if cr.Remediation != "" {
@@ -143,6 +154,27 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	)
 
 	return nil
+}
+
+// splitEvidence splits an aggregated evidence string into individual findings.
+// The engine joins per-finding evidence with "; " (see pkg/engine/engine.go).
+// Returns whitespace-trimmed, non-empty parts; nil for empty input.
+func splitEvidence(s string) []string {
+	if s == "" {
+		return nil
+	}
+
+	raw := strings.Split(s, "; ")
+	parts := make([]string, 0, len(raw))
+
+	for _, p := range raw {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			parts = append(parts, p)
+		}
+	}
+
+	return parts
 }
 
 // SeverityColorStyle returns the lipgloss style for the given severity level.
