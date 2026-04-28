@@ -23,7 +23,6 @@ export default defineConfig({
         text: 'Rules',
         items: [
           { text: 'Overview', link: '/rules/' },
-          { text: 'Claude', link: '/rules/claude' },
           { text: 'Credentials', link: '/rules/credentials' },
           { text: 'Docker', link: '/rules/docker' },
           { text: 'Environment', link: '/rules/env' },

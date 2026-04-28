@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/foomo/obacht/internal/runner"
+	"github.com/foomo/obacht/pkg/schema"
 )
 
 var doctorCmd = &cobra.Command{
@@ -42,17 +43,20 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// --- Policies ---
 	fmt.Println(boldStyle.Render("Policies"))
 
-	ruleFiles, err := loadEmbeddedRuleFiles()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "  Error loading rules: %v\n", err)
-	}
+	var (
+		ruleFiles []schema.RulesFile
+		err       error
+	)
 
 	if rulesDir != "" {
-		extRuleFiles, err := loadExternalRuleFiles(rulesDir)
+		ruleFiles, err = loadExternalRuleFiles(rulesDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "  Error loading external rules: %v\n", err)
-		} else {
-			ruleFiles = mergeRuleFiles(ruleFiles, extRuleFiles)
+		}
+	} else {
+		ruleFiles, err = loadEmbeddedRuleFiles()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "  Error loading rules: %v\n", err)
 		}
 	}
 

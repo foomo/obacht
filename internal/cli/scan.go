@@ -259,22 +259,24 @@ func filterRuleFilesBySeverity(ruleFiles []schema.RulesFile, sevs map[schema.Sev
 func runScan(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// Load built-in rule files from embedded policies.
-	ruleFiles, err := loadEmbeddedRuleFiles()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "loading embedded rules: %v\n", err)
-		os.Exit(Error)
-	}
+	// When --rules-dir is set, use only those rules. Otherwise use embedded rules.
+	var (
+		ruleFiles []schema.RulesFile
+		err       error
+	)
 
-	// Optionally load external rule files from --rules-dir.
 	if rulesDir != "" {
-		extRuleFiles, err := loadExternalRuleFiles(rulesDir)
+		ruleFiles, err = loadExternalRuleFiles(rulesDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "loading external rules: %v\n", err)
 			os.Exit(Error)
 		}
-
-		ruleFiles = mergeRuleFiles(ruleFiles, extRuleFiles)
+	} else {
+		ruleFiles, err = loadEmbeddedRuleFiles()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "loading embedded rules: %v\n", err)
+			os.Exit(Error)
+		}
 	}
 
 	// Parse rule ID filters.
@@ -508,52 +510,4 @@ func resolveInputFromDir(dir, baseName string) (string, error) {
 	}
 
 	return string(data), nil
-}
-
-// mergeRuleFiles merges external rule files into built-in ones.
-// External rules with the same ID override built-in ones.
-func mergeRuleFiles(builtIn, external []schema.RulesFile) []schema.RulesFile {
-	// Build a map of all external rules by ID.
-	extMap := make(map[string]schema.Rule)
-
-	for _, rf := range external {
-		for _, r := range rf.Rules {
-			extMap[r.ID] = r
-		}
-	}
-
-	// Override built-in rules where external ones have the same ID.
-	for i, rf := range builtIn {
-		for j, r := range rf.Rules {
-			if ext, ok := extMap[r.ID]; ok {
-				builtIn[i].Rules[j] = ext
-
-				delete(extMap, r.ID)
-			}
-		}
-	}
-
-	// Collect remaining external rules (entirely new) into rule files.
-	if len(extMap) > 0 {
-		// Add them as part of the external rule files that define their input/policy.
-		for _, rf := range external {
-			var newRules []schema.Rule
-
-			for _, r := range rf.Rules {
-				if _, ok := extMap[r.ID]; ok {
-					newRules = append(newRules, r)
-				}
-			}
-
-			if len(newRules) > 0 {
-				builtIn = append(builtIn, schema.RulesFile{
-					Input:  rf.Input,
-					Policy: rf.Policy,
-					Rules:  newRules,
-				})
-			}
-		}
-	}
-
-	return builtIn
 }

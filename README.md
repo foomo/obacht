@@ -17,27 +17,39 @@ Download a [binary release](https://github.com/foomo/obacht/releases)
 
 ### Build from source
 
-```
+```shell
 go install github.com/foomo/obacht@latest
 ```
 
 ### Homebrew (Linux/macOS)
 
 If you use [Homebrew](https://brew.sh), you can install like this:
-```
+
+```shell
 brew install foomo/tap/obacht
+```
+
+### Docker
+
+If you use [Docker](https://www.docker.com/r/foomo/gotsrpc), you can install like this:
+
+```shell
+docker run foomo/gotsprc:latest --help
 ```
 
 ### Mise
 
 If you use [mise](https://https://mise.jdx.dev), you can install like this:
-```
+
+```shell
 mise use github.com:foomo/obacht
 ```
 
-Release downloads:
+or run directly:
 
-[https://github.com/foomo/obacht/releases](https://github.com/foomo/obacht/releases)
+```shell
+mise x github:foomo/obacht
+```
 
 ## How to Contribute
 

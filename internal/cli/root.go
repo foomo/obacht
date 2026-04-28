@@ -31,7 +31,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().StringVar(&format, "format", "pretty", "output format (pretty, json)")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable verbose output")
-	rootCmd.PersistentFlags().StringVar(&rulesDir, "rules-dir", "", "path to rules directory")
+	rootCmd.PersistentFlags().StringVar(&rulesDir, "rules-dir", "", "use rules from this directory instead of embedded rules")
 }
 
 // Execute runs the root command and exits with the appropriate code.

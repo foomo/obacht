@@ -151,9 +151,11 @@ If no input script is defined (neither inline nor in `inputs/`), the rule is mar
 - Never output sensitive values (passwords, tokens) — only names and metadata
 - Scripts run with a 30-second timeout
 
-## Override Behavior
+## Replacement Behavior
 
-External rules with the same ID as built-in rules will override them. This allows you to customize severity levels or detection logic for existing checks.
+`--rules-dir` replaces the embedded rule set entirely. When the flag is set, only rules
+from the given directory run; built-in rules are not loaded. To customise a built-in rule,
+copy it into your own rules directory and edit it there.
 
 ## Usage
 

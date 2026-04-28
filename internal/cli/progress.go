@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"charm.land/bubbles/v2/progress"
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
@@ -13,14 +14,21 @@ import (
 	"github.com/foomo/obacht/pkg/schema"
 )
 
-const categoryWidth = 12 // left-column width for category labels
-const barWidth = 30      // width of each progress bar
+const (
+	categoryWidth = 12
+	barWidth      = 40
+)
+
+const heroLogo = ` ┌─┐┌┐ ┌─┐┌─┐┬ ┬┌┬┐
+ │ │├┴┐├─┤│  ├─┤ │
+ └─┘└─┘┴ ┴└─┘┴ ┴ ┴ `
+
+const heroTagline = "developer environment scanner"
 
 // categoryState tracks the status of a single category during the scan.
 type categoryState struct {
 	category string
 	status   string // "pending", "running", "done"
-	bar      progress.Model
 	passed   int
 	failed   int
 	skipped  int
@@ -38,26 +46,21 @@ type scanDoneMsg struct {
 
 // scanModel is the bubbletea model for the scan progress display.
 type scanModel struct {
-	categories []categoryState
-	catIndex   map[string]int // category name -> index in categories slice
-	result     *schema.ScanResult
-	err        error
-	done       bool
-	ctx        context.Context //nolint:containedctx
-	rules      []schema.RulesFile
-	program    *tea.Program
-}
-
-func newProgressBar() progress.Model {
-	return progress.New(
-		progress.WithDefaultBlend(),
-		progress.WithWidth(barWidth),
-		progress.WithoutPercentage(),
-	)
+	categories  []categoryState
+	catIndex    map[string]int
+	bar         progress.Model
+	spin        spinner.Model
+	groupsDone  int
+	groupsTotal int
+	result      *schema.ScanResult
+	err         error
+	done        bool
+	ctx         context.Context //nolint:containedctx
+	rules       []schema.RulesFile
+	program     *tea.Program
 }
 
 func newScanModel(ctx context.Context, ruleFiles []schema.RulesFile) *scanModel {
-	// Collect unique categories in order from rule files.
 	var cats []categoryState
 
 	catIndex := make(map[string]int)
@@ -69,15 +72,25 @@ func newScanModel(ctx context.Context, ruleFiles []schema.RulesFile) *scanModel 
 				cats = append(cats, categoryState{
 					category: r.Category,
 					status:   "pending",
-					bar:      newProgressBar(),
 				})
 			}
 		}
 	}
 
+	bar := progress.New(
+		progress.WithDefaultBlend(),
+		progress.WithWidth(barWidth),
+		progress.WithoutPercentage(),
+	)
+
+	sp := spinner.New(spinner.WithSpinner(spinner.Dot))
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
+
 	return &scanModel{
 		categories: cats,
 		catIndex:   catIndex,
+		bar:        bar,
+		spin:       sp,
 		ctx:        ctx,
 		rules:      ruleFiles,
 	}
@@ -89,7 +102,7 @@ func (m *scanModel) SetProgram(p *tea.Program) {
 }
 
 func (m *scanModel) Init() tea.Cmd {
-	return m.runScan()
+	return tea.Batch(m.runScan(), m.spin.Tick)
 }
 
 func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -101,6 +114,10 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case progressMsg:
 		evt := engine.ProgressEvent(msg)
+
+		if m.groupsTotal == 0 {
+			m.groupsTotal = evt.GroupTotal
+		}
 
 		idx, ok := m.catIndex[evt.Category]
 		if !ok {
@@ -128,35 +145,47 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			cat.status = "done"
-			// Animate the bar to 100% only after the group has finished.
-			cmd := cat.bar.SetPercent(1.0)
+			m.groupsDone++
 
-			return m, cmd
+			pct := 0.0
+			if m.groupsTotal > 0 {
+				pct = float64(m.groupsDone) / float64(m.groupsTotal)
+			}
+
+			return m, m.bar.SetPercent(pct)
 		}
+
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spin, cmd = m.spin.Update(msg)
+
+		return m, cmd
+
+	case progress.FrameMsg:
+		newBar, cmd := m.bar.Update(msg)
+		m.bar = newBar
+
+		if m.done && m.err == nil && !m.bar.IsAnimating() {
+			return m, tea.Quit
+		}
+
+		return m, cmd
 
 	case scanDoneMsg:
 		m.done = true
 		m.result = msg.result
 		m.err = msg.err
 
-		return m, tea.Quit
-
-	case progress.FrameMsg:
-		// Forward frame messages to all running progress bars.
-		var cmds []tea.Cmd
-
-		for i := range m.categories {
-			if m.categories[i].status == "running" {
-				model, cmd := m.categories[i].bar.Update(msg)
-				m.categories[i].bar = model
-
-				if cmd != nil {
-					cmds = append(cmds, cmd)
-				}
-			}
+		if msg.err != nil {
+			return m, tea.Quit
 		}
 
-		return m, tea.Batch(cmds...)
+		cmd := m.bar.SetPercent(1.0)
+		if !m.bar.IsAnimating() {
+			return m, tea.Quit
+		}
+
+		return m, cmd
 	}
 
 	return m, nil
@@ -165,33 +194,42 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *scanModel) View() tea.View {
 	var b strings.Builder
 
+	heroStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
+	taglineStyle := lipgloss.NewStyle().Faint(true).PaddingLeft(1)
 	labelStyle := lipgloss.NewStyle().Width(categoryWidth)
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	dimStyle := lipgloss.NewStyle().Faint(true)
+	countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+
+	b.WriteString(heroStyle.Render(heroLogo) + "\n")
+	b.WriteString(taglineStyle.Render(heroTagline) + "\n\n")
+
+	count := fmt.Sprintf("%d/%d", m.groupsDone, m.groupsTotal)
+	if m.groupsTotal == 0 {
+		count = "starting…"
+	}
+
+	fmt.Fprintf(&b, " %s  %s\n\n", m.bar.View(), countStyle.Render(count))
 
 	for _, cat := range m.categories {
 		label := labelStyle.Render(cat.category)
 
 		switch cat.status {
 		case "pending":
-			bar := cat.bar.ViewAs(0)
-			fmt.Fprintf(&b, "  %s %s\n", label, dimStyle.Render(bar))
+			fmt.Fprintf(&b, "  %s %s\n", dimStyle.Render("·"), dimStyle.Render(label))
 
 		case "running":
-			bar := cat.bar.View()
-			fmt.Fprintf(&b, "  %s %s\n", label, bar)
+			fmt.Fprintf(&b, "  %s %s\n", m.spin.View(), label)
 
 		case "done":
-			bar := cat.bar.ViewAs(1.0)
-			summary := formatCategorySummary(cat)
-
 			icon := greenStyle.Render("✓")
 			if cat.failed > 0 || cat.errors > 0 {
 				icon = redStyle.Render("✗")
 			}
 
-			fmt.Fprintf(&b, "  %s %s %s %s\n", label, bar, icon, dimStyle.Render(summary))
+			summary := formatCategorySummary(cat)
+			fmt.Fprintf(&b, "  %s %s %s\n", icon, label, dimStyle.Render(summary))
 		}
 	}
 
