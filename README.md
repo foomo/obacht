@@ -6,50 +6,78 @@
   <img alt="obacht" src="docs/public/logo.png" width="400" height="400"/>
 </p>
 
-# Best practice security scanner
+# obacht
 
+> Security scanner for developer environments
+
+obacht inspects your local development setup for security misconfigurations — insecure file permissions, exposed credentials, weak SSH/Git settings, risky Docker access — using an embedded [OPA](https://www.openpolicyagent.org/) engine and Rego policies. It is lightweight, read-only, and requires no agent or endpoint management platform.
+
+## Features
+
+- **98 built-in rules** across 12 categories: SSH, Git, Docker, Kubernetes, env, shell, tools, PATH, OS, credentials, privacy
+- **OPA-powered** with an embedded Rego engine — no external dependencies
+- **Read-only collectors** — never modifies system state
+- **Extensible** via `--rules-dir` for custom Rego policies
+- **Pretty TUI** or machine-readable JSON output for CI
 
 ## Installation
 
-### Download binary
-
-Download a [binary release](https://github.com/foomo/obacht/releases)
-
-### Build from source
-
-```shell
-go install github.com/foomo/obacht@latest
-```
-
-### Homebrew (Linux/macOS)
-
-If you use [Homebrew](https://brew.sh), you can install like this:
+<details>
+<summary><b>Homebrew</b> (macOS / Linux)</summary>
 
 ```shell
 brew install foomo/tap/obacht
 ```
 
-### Docker
+See the [foomo/homebrew-tap](https://github.com/foomo/homebrew-tap) repository.
 
-If you use [Docker](https://www.docker.com/r/foomo/gotsrpc), you can install like this:
+</details>
+
+<details>
+<summary><b>Docker</b></summary>
 
 ```shell
-docker run foomo/gotsprc:latest --help
+docker run --rm foomo/obacht:latest scan
 ```
 
-### Mise
+Multi-arch images (`amd64`, `arm64`) are published to [Docker Hub](https://hub.docker.com/r/foomo/obacht).
 
-If you use [mise](https://https://mise.jdx.dev), you can install like this:
+</details>
+
+<details>
+<summary><b>mise</b></summary>
 
 ```shell
-mise use github.com:foomo/obacht
+mise use github:foomo/obacht
 ```
 
 or run directly:
 
 ```shell
-mise x github:foomo/obacht
+mise x github:foomo/obacht -- scan
 ```
+
+See [mise.jdx.dev](https://mise.jdx.dev).
+
+</details>
+
+<details>
+<summary><b>Binary release</b></summary>
+
+Download the archive for your OS/arch from the [releases page](https://github.com/foomo/obacht/releases) and extract `obacht` into your `$PATH`.
+
+</details>
+
+<details>
+<summary><b>go install</b></summary>
+
+```shell
+go install github.com/foomo/obacht/cmd/obacht@latest
+```
+
+Requires Go 1.26+.
+
+</details>
 
 ## How to Contribute
 
