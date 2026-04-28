@@ -10,16 +10,14 @@ lefthook = "2.1.4"
 # https://mise-tools.jdx.dev/tools/golangci-lint
 golangci-lint = "2.11.4"
 
-"github:Haleclipse/CCometixLine" = "1.1.2"
-
 [tasks."opa:fmt"]
 description = "format opa files"
-run = "opa fmt -w ./policies"
+run = "opa fmt -w ./rules/policies"
 
 [tasks."opa:lint"]
 description = "lint opa files"
-run = "regal lint ./policies"
+run = "regal lint ./rules/policies"
 
 [tasks."opa:fix"]
 description = "lint opa files"
-run = "regal fix ./policies"
+run = "regal fix ./rules/policies"
