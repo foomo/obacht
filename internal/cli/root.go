@@ -26,12 +26,21 @@ var rootCmd = &cobra.Command{
 
 		return nil
 	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		showVersion, _ := cmd.Flags().GetBool("version")
+		if showVersion {
+			return renderVersion(cmd.OutOrStdout(), getVersionInfo(), format)
+		}
+
+		return cmd.Help()
+	},
 }
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&format, "format", "pretty", "output format (pretty, json)")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable verbose output")
 	rootCmd.PersistentFlags().StringVar(&rulesDir, "rules-dir", "", "use rules from this directory instead of embedded rules")
+	rootCmd.Flags().Bool("version", false, "print version information")
 }
 
 // Execute runs the root command and exits with the appropriate code.

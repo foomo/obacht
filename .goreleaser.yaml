@@ -1,26 +1,32 @@
 version: 2
 
+project_name: obacht
+
 builds:
-  - main: ./cmd/obacht
-    binary: obacht
+  - binary: obacht
+    main: ./cmd/obacht/obacht.go
     env:
       - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -tags=safe
+    ldflags:
+      - -s -w
+      - -X github.com/foomo/obacht/internal/cli.version={{.Version}}
+      - -X github.com/foomo/obacht/internal/cli.commitHash={{.FullCommit}}
+      - -X github.com/foomo/obacht/internal/cli.buildTimestamp={{.Timestamp}}
     goos:
       - darwin
       - linux
     goarch:
       - amd64
       - arm64
-    ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
 archives:
-  - format: tar.gz
-    name_template: >-
-      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+  - formats: [ tar.gz ]
 
-checksum:
-  name_template: checksums.txt
+release:
+  prerelease: auto
 
 changelog:
   use: github-native
@@ -29,6 +35,77 @@ brews:
   - repository:
       owner: foomo
       name: homebrew-tap
-    homepage: https://github.com/foomo/obacht
-    description: Security configuration scanner for developer environments
-    license: MIT
+    caveats: "obacht"
+    homepage: "https://github.com/foomo/obacht"
+    description: "Security configuration scanner for developer environments"
+
+dockers:
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: Dockerfile
+    image_templates:
+      - '{{ if eq .Prerelease "" }}foomo/obacht:latest-amd64{{ end }}'
+      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Version }}-amd64{{ end }}'
+      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}-amd64{{ end }}'
+      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}.{{ .Minor }}-amd64{{ end }}'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=Security configuration scanner for developer environments'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation={{.GitURL}}'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/amd64'
+
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    image_templates:
+      - '{{ if eq .Prerelease "" }}foomo/obacht:latest-arm64{{ end }}'
+      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Version }}-arm64{{ end }}'
+      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}-arm64{{ end }}'
+      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}.{{ .Minor }}-arm64{{ end }}'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=Security configuration scanner for developer environments'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation={{.GitURL}}'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/arm64'
+
+docker_manifests:
+  # basic
+  - name_template: 'foomo/obacht:latest'
+    image_templates:
+      - 'foomo/obacht:latest-amd64'
+      - 'foomo/obacht:latest-arm64'
+    skip_push: auto
+
+  - name_template: 'foomo/obacht:{{ .Version }}'
+    image_templates:
+      - 'foomo/obacht:{{ .Version }}-amd64'
+      - 'foomo/obacht:{{ .Version }}-arm64'
+    skip_push: auto
+
+  - name_template: 'foomo/obacht:{{ .Major }}'
+    image_templates:
+      - 'foomo/obacht:{{ .Major }}-amd64'
+      - 'foomo/obacht:{{ .Major }}-arm64'
+    skip_push: auto
+
+  - name_template: 'foomo/obacht:{{ .Major }}.{{ .Minor }}'
+    image_templates:
+      - 'foomo/obacht:{{ .Major }}.{{ .Minor }}-amd64'
+      - 'foomo/obacht:{{ .Major }}.{{ .Minor }}-arm64'
+    skip_push: auto
