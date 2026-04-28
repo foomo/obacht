@@ -4,6 +4,9 @@ hero:
   name: obacht
   text: Security Scanner for Developer Environments
   tagline: Inspect your local development setup for security misconfigurations using OPA/Rego policies
+  image:
+    src: /logo.png
+    alt: obacht
   actions:
     - theme: brand
       text: Get Started

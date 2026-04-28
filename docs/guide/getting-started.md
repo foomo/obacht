@@ -2,16 +2,16 @@
 
 ## Installation
 
-### Using mise (recommended)
-
-```bash
-mise install obacht
-```
-
 ### Using Homebrew
 
 ```bash
-brew install franklinkim/tap/obacht
+brew install foomo/tap/obacht
+```
+
+### Using mise
+
+```bash
+mise install github:foomo/obacht
 ```
 
 ### From Source

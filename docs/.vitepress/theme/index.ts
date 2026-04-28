@@ -1,4 +1,9 @@
-import DefaultTheme from 'vitepress/theme'
-import './custom.css'
+import type { Theme } from 'vitepress';
+import DefaultTheme from 'vitepress/theme';
+import "@catppuccin/vitepress/theme/frappe/blue.css";
 
-export default DefaultTheme
+import './custom.css';
+
+export default {
+	extends: DefaultTheme,
+} satisfies Theme;
