@@ -934,3 +934,33 @@ rules:
           "evidence": sprintf("permissions.deny missing project secret entries:\n        • %s", [concat("\n        • ", split(input.permissions_deny_project_secrets_missing, " "))]),
         }
       }
+  - id: CLD045
+    title: Claude Desktop installed Native Messaging manifests for Chromium browsers
+    severity: high
+    category: claude
+    description: |
+      Claude Desktop for macOS silently installs a Native Messaging
+      manifest at com.anthropic.claude_browser_extension.json under
+      ~/Library/Application Support for several Chromium-based browser
+      directories — including browsers that are not even installed on
+      the machine (Brave, Edge, Opera, Vivaldi, Arc, Chromium, Chrome).
+      The manifest pre-authorizes a small set of Chrome extension IDs
+      to invoke a Claude Desktop helper binary outside the browser
+      sandbox at user privilege. The file is rewritten on every Claude
+      Desktop launch and is undocumented by Anthropic. Any extension
+      whose ID matches one of the pre-authorized IDs and is installed
+      in one of those browsers can reach the helper binary and access
+      browser tabs. Mitigate by truncating each manifest to an empty
+      file and setting the user-immutable (uchg) flag so Claude Desktop
+      cannot rewrite it on next launch.
+    remediation: |-
+      Run:
+      find ~/Library/Application\ Support -type f -name com.anthropic.claude_browser_extension.json -exec sh -c ': > "$1" && chflags uchg "$1"' _ {} \;
+    policy: |
+      findings contains f if {
+        count(input.claude_desktop_native_messaging_manifests) > 0
+        f := {
+          "rule_id": "CLD045",
+          "evidence": sprintf("Unmitigated Claude Desktop Native Messaging manifest(s):\n        • %s", [concat("\n        • ", input.claude_desktop_native_messaging_manifests)]),
+        }
+      }

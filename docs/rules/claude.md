@@ -429,3 +429,34 @@ IAM access keys, PGP keys, GitHub CLI tokens, cluster credentials, registry toke
 `Read(./**/.env)`, `Read(./**/.env.*)`, `Read(./**/*.pem)`, `Read(./**/*.key)`, `Read(./**/id_rsa*)`,
 `Read(./**/id_ed25519*)`, `Read(./**/credentials*)`. Both top-level and recursive (`**` glob) variants are
 required so secrets in nested directories cannot be read either.
+
+## CLD045: Claude Desktop installed Native Messaging manifests for Chromium browsers
+
+**Severity:** high
+
+Claude Desktop for macOS silently installs a Native Messaging manifest at
+`com.anthropic.claude_browser_extension.json` under `~/Library/Application Support` for several Chromium-based
+browser directories — including browsers that are not installed on the machine (Brave, Edge, Opera, Vivaldi, Arc,
+Chromium, Chrome). The manifest pre-authorizes a small set of Chrome extension IDs (one matches the Claude for
+Chrome extension; the other two are not in the Chrome Web Store) to invoke a Claude Desktop helper binary outside
+the browser sandbox at user privilege. The file is rewritten on every Claude Desktop launch and is undocumented by
+Anthropic. Any extension whose ID matches one of the pre-authorized IDs and is installed in one of those browsers
+can reach the helper binary and access browser tabs.
+
+**What it checks:**
+
+- Searches `~/Library/Application Support` recursively for files named `com.anthropic.claude_browser_extension.json`.
+- Considers a manifest mitigated when it is empty (`stat -f %z` is `0`) **and** has the user-immutable (`uchg`) BSD
+  file flag set so Claude Desktop cannot rewrite it on next launch.
+- Reports every manifest that is non-empty or not locked.
+
+**Remediation:**
+
+```bash
+find ~/Library/Application\ Support -type f -name com.anthropic.claude_browser_extension.json \
+  -exec sh -c ': > "$1" && chflags uchg "$1"' _ {} \;
+```
+
+This truncates each manifest to zero bytes and sets the immutable flag. The detection also accepts the older
+`echo "" > "$1"` form (1-byte newline file) when `uchg` is set. Re-run after every Claude Desktop update — the
+package installer can clear `uchg` and reintroduce the file.

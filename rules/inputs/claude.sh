@@ -1,7 +1,44 @@
 #!/bin/sh
+# Detect Claude Desktop Native Messaging manifests installed under
+# ~/Library/Application Support for Chromium-based browsers. List paths
+# that are not yet mitigated. Mitigated = empty file with the user
+# immutable (uchg) flag set, so Claude Desktop cannot rewrite it.
+claude_desktop_native_messaging_manifests="[]"
+manifest_search_dir="$HOME/Library/Application Support"
+if [ -d "$manifest_search_dir" ]; then
+  manifest_files=$(find "$manifest_search_dir" -type f -name "com.anthropic.claude_browser_extension.json" 2>/dev/null)
+  if [ -n "$manifest_files" ]; then
+    saved_ifs=$IFS
+    IFS='
+'
+    json="["
+    first=1
+    for mf in $manifest_files; do
+      mf_size=$(stat -f "%z" "$mf" 2>/dev/null || echo 0)
+      mf_flags=$(stat -f "%Sf" "$mf" 2>/dev/null || echo "")
+      # Skip mitigated manifests: locked with uchg AND too small to
+      # contain a functional Native Messaging manifest (tolerates both
+      # `: > f` (0 bytes) and `echo "" > f` (1 byte newline) forms).
+      if [ "$mf_size" -le 1 ] && [ "$mf_flags" = "uchg" ]; then
+        continue
+      fi
+      mf_escaped=$(printf '%s' "$mf" | sed 's/\\/\\\\/g; s/"/\\"/g')
+      if [ "$first" = "1" ]; then
+        json="${json}\"${mf_escaped}\""
+        first=0
+      else
+        json="${json},\"${mf_escaped}\""
+      fi
+    done
+    json="${json}]"
+    IFS=$saved_ifs
+    claude_desktop_native_messaging_manifests=$json
+  fi
+fi
+
 # Check if Claude Code CLI is installed.
 if ! command -v claude >/dev/null 2>&1; then
-  printf '{"installed": false, "gitignore_excludes_settings": false, "config_present": false, "auto_compact_enabled": "unset", "pr_status_footer_enabled": "unset", "claude_in_chrome_default_enabled": "unset", "sandbox_fail_if_unavailable": "unset", "settings_present": false, "env_disable_compact": "unset", "env_disable_telemetry": "unset", "env_disable_bug_command": "unset", "env_disable_auto_compact": "unset", "env_disable_login_command": "unset", "env_disable_logout_command": "unset", "env_disable_error_reporting": "unset", "env_disable_upgrade_command": "unset", "env_disable_feedback_command": "unset", "env_disable_extra_usage_command": "unset", "env_claude_code_disable_fast_mode": "unset", "env_disable_install_github_app_command": "unset", "env_claude_code_disable_cron": "unset", "env_claude_code_disable_feedback_survey": "unset", "env_claude_code_disable_file_checkpointing": "unset", "env_claude_code_disable_experimental_betas": "unset", "env_force_autoupdate_plugins": "unset", "env_is_demo": "unset", "settings_disable_auto_mode": "unset", "settings_disable_deep_link_registration": "unset", "settings_auto_memory_directory": "unset", "settings_plans_directory": "unset", "settings_respect_gitignore": "unset", "settings_skip_web_fetch_preflight": "unset", "settings_attribution_commit": "unset", "settings_attribution_pr": "unset", "sandbox_enabled": "unset", "sandbox_auto_allow_bash_if_sandboxed": "unset", "sandbox_allow_unsandboxed_commands": "unset", "sandbox_network_allow_managed_domains_only": "unset", "sandbox_network_allowed_domains_has_github": "false", "sandbox_network_denied_domains_has_uploads_github": "false", "sandbox_filesystem_allow_write_has_npm_logs": "false", "sandbox_filesystem_allow_write_has_claude_debug": "false", "permissions_present": false, "permissions_disable_bypass_mode": "unset", "permissions_deny_network_missing": "", "permissions_deny_destructive_fs_missing": "", "permissions_deny_git_missing": "", "permissions_deny_home_secrets_missing": "", "permissions_deny_project_secrets_missing": ""}'
+  printf '{"installed": false, "gitignore_excludes_settings": false, "config_present": false, "auto_compact_enabled": "unset", "pr_status_footer_enabled": "unset", "claude_in_chrome_default_enabled": "unset", "sandbox_fail_if_unavailable": "unset", "settings_present": false, "env_disable_compact": "unset", "env_disable_telemetry": "unset", "env_disable_bug_command": "unset", "env_disable_auto_compact": "unset", "env_disable_login_command": "unset", "env_disable_logout_command": "unset", "env_disable_error_reporting": "unset", "env_disable_upgrade_command": "unset", "env_disable_feedback_command": "unset", "env_disable_extra_usage_command": "unset", "env_claude_code_disable_fast_mode": "unset", "env_disable_install_github_app_command": "unset", "env_claude_code_disable_cron": "unset", "env_claude_code_disable_feedback_survey": "unset", "env_claude_code_disable_file_checkpointing": "unset", "env_claude_code_disable_experimental_betas": "unset", "env_force_autoupdate_plugins": "unset", "env_is_demo": "unset", "settings_disable_auto_mode": "unset", "settings_disable_deep_link_registration": "unset", "settings_auto_memory_directory": "unset", "settings_plans_directory": "unset", "settings_respect_gitignore": "unset", "settings_skip_web_fetch_preflight": "unset", "settings_attribution_commit": "unset", "settings_attribution_pr": "unset", "sandbox_enabled": "unset", "sandbox_auto_allow_bash_if_sandboxed": "unset", "sandbox_allow_unsandboxed_commands": "unset", "sandbox_network_allow_managed_domains_only": "unset", "sandbox_network_allowed_domains_has_github": "false", "sandbox_network_denied_domains_has_uploads_github": "false", "sandbox_filesystem_allow_write_has_npm_logs": "false", "sandbox_filesystem_allow_write_has_claude_debug": "false", "permissions_present": false, "permissions_disable_bypass_mode": "unset", "permissions_deny_network_missing": "", "permissions_deny_destructive_fs_missing": "", "permissions_deny_git_missing": "", "permissions_deny_home_secrets_missing": "", "permissions_deny_project_secrets_missing": "", "claude_desktop_native_messaging_manifests": %s}' "$claude_desktop_native_messaging_manifests"
   exit 0
 fi
 
@@ -298,7 +335,7 @@ if [ -f "$settings_file" ]; then
   fi
 fi
 
-printf '{"installed": true, "gitignore_excludes_settings": %s, "config_present": %s, "auto_compact_enabled": "%s", "pr_status_footer_enabled": "%s", "claude_in_chrome_default_enabled": "%s", "sandbox_fail_if_unavailable": "%s", "settings_present": %s, "env_disable_compact": "%s", "env_disable_telemetry": "%s", "env_disable_bug_command": "%s", "env_disable_auto_compact": "%s", "env_disable_login_command": "%s", "env_disable_logout_command": "%s", "env_disable_error_reporting": "%s", "env_disable_upgrade_command": "%s", "env_disable_feedback_command": "%s", "env_disable_extra_usage_command": "%s", "env_claude_code_disable_fast_mode": "%s", "env_disable_install_github_app_command": "%s", "env_claude_code_disable_cron": "%s", "env_claude_code_disable_feedback_survey": "%s", "env_claude_code_disable_file_checkpointing": "%s", "env_claude_code_disable_experimental_betas": "%s", "env_force_autoupdate_plugins": "%s", "env_is_demo": "%s", "settings_disable_auto_mode": "%s", "settings_disable_deep_link_registration": "%s", "settings_auto_memory_directory": "%s", "settings_plans_directory": "%s", "settings_respect_gitignore": "%s", "settings_skip_web_fetch_preflight": "%s", "settings_attribution_commit": "%s", "settings_attribution_pr": "%s", "sandbox_enabled": "%s", "sandbox_auto_allow_bash_if_sandboxed": "%s", "sandbox_allow_unsandboxed_commands": "%s", "sandbox_network_allow_managed_domains_only": "%s", "sandbox_network_allowed_domains_has_github": "%s", "sandbox_network_denied_domains_has_uploads_github": "%s", "sandbox_filesystem_allow_write_has_npm_logs": "%s", "sandbox_filesystem_allow_write_has_claude_debug": "%s", "permissions_present": %s, "permissions_disable_bypass_mode": "%s", "permissions_deny_network_missing": "%s", "permissions_deny_destructive_fs_missing": "%s", "permissions_deny_git_missing": "%s", "permissions_deny_home_secrets_missing": "%s", "permissions_deny_project_secrets_missing": "%s"}' \
+printf '{"installed": true, "gitignore_excludes_settings": %s, "config_present": %s, "auto_compact_enabled": "%s", "pr_status_footer_enabled": "%s", "claude_in_chrome_default_enabled": "%s", "sandbox_fail_if_unavailable": "%s", "settings_present": %s, "env_disable_compact": "%s", "env_disable_telemetry": "%s", "env_disable_bug_command": "%s", "env_disable_auto_compact": "%s", "env_disable_login_command": "%s", "env_disable_logout_command": "%s", "env_disable_error_reporting": "%s", "env_disable_upgrade_command": "%s", "env_disable_feedback_command": "%s", "env_disable_extra_usage_command": "%s", "env_claude_code_disable_fast_mode": "%s", "env_disable_install_github_app_command": "%s", "env_claude_code_disable_cron": "%s", "env_claude_code_disable_feedback_survey": "%s", "env_claude_code_disable_file_checkpointing": "%s", "env_claude_code_disable_experimental_betas": "%s", "env_force_autoupdate_plugins": "%s", "env_is_demo": "%s", "settings_disable_auto_mode": "%s", "settings_disable_deep_link_registration": "%s", "settings_auto_memory_directory": "%s", "settings_plans_directory": "%s", "settings_respect_gitignore": "%s", "settings_skip_web_fetch_preflight": "%s", "settings_attribution_commit": "%s", "settings_attribution_pr": "%s", "sandbox_enabled": "%s", "sandbox_auto_allow_bash_if_sandboxed": "%s", "sandbox_allow_unsandboxed_commands": "%s", "sandbox_network_allow_managed_domains_only": "%s", "sandbox_network_allowed_domains_has_github": "%s", "sandbox_network_denied_domains_has_uploads_github": "%s", "sandbox_filesystem_allow_write_has_npm_logs": "%s", "sandbox_filesystem_allow_write_has_claude_debug": "%s", "permissions_present": %s, "permissions_disable_bypass_mode": "%s", "permissions_deny_network_missing": "%s", "permissions_deny_destructive_fs_missing": "%s", "permissions_deny_git_missing": "%s", "permissions_deny_home_secrets_missing": "%s", "permissions_deny_project_secrets_missing": "%s", "claude_desktop_native_messaging_manifests": %s}' \
   "$gitignore_excludes_settings" "$config_present" \
   "$auto_compact_enabled" "$pr_status_footer_enabled" \
   "$claude_in_chrome_default_enabled" "$sandbox_fail_if_unavailable" \
@@ -319,4 +356,5 @@ printf '{"installed": true, "gitignore_excludes_settings": %s, "config_present":
   "$permissions_present" "$permissions_disable_bypass_mode" \
   "$permissions_deny_network_missing" "$permissions_deny_destructive_fs_missing" \
   "$permissions_deny_git_missing" "$permissions_deny_home_secrets_missing" \
-  "$permissions_deny_project_secrets_missing"
+  "$permissions_deny_project_secrets_missing" \
+  "$claude_desktop_native_messaging_manifests"

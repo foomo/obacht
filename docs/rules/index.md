@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 98 built-in rules across 12 categories.
+obacht includes 99 built-in rules across 12 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -48,6 +48,7 @@ obacht includes 98 built-in rules across 12 categories.
 | CLD042 | Claude      | Claude Code permissions.deny missing destructive git command blocks | warn     |
 | CLD043 | Claude      | Claude Code permissions.deny missing home credential directory blocks | high     |
 | CLD044 | Claude      | Claude Code permissions.deny missing project secret file blocks | high     |
+| CLD045 | Claude      | Claude Desktop installed Native Messaging manifests for Chromium browsers | high     |
 | CRD001 | Credentials | AWS credentials file has weak permissions            | high     |
 | CRD002 | Credentials | .netrc file has weak permissions                     | high     |
 | CRD003 | Credentials | GCP credentials file has weak permissions            | high     |
