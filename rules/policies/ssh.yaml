@@ -72,3 +72,31 @@ rules:
           "evidence": "SSH agent forwarding is enabled globally (Host *)",
         }
       }
+  - id: SSH005
+    title: SSH key uses weak algorithm
+    severity: high
+    category: ssh
+    description: |
+      DSA keys are insecure (deprecated since 2015). RSA keys under
+      3072 bits are below current NIST guidance. Stolen ciphertext
+      now can be decrypted later as factoring improves.
+    remediation: "Generate a stronger key: ssh-keygen -t ed25519 -a 100. Add the new public key to remote hosts and remove the weak key."
+    policy: |
+      findings contains f if {
+        key := input.keys[_]
+        key.algorithm == "DSA"
+        f := {
+          "rule_id": "SSH005",
+          "evidence": sprintf("SSH key %s uses weak algorithm: DSA/%d bits", [key.path, key.bits]),
+        }
+      }
+      findings contains f if {
+        key := input.keys[_]
+        key.algorithm == "RSA"
+        key.bits > 0
+        key.bits < 3072
+        f := {
+          "rule_id": "SSH005",
+          "evidence": sprintf("SSH key %s uses weak algorithm: RSA/%d bits (minimum 3072)", [key.path, key.bits]),
+        }
+      }

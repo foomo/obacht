@@ -62,3 +62,20 @@ Enabling `ForwardAgent` globally (under `Host *`) allows any remote server to us
 Host trusted-server
     ForwardAgent yes
 ```
+
+## SSH005: SSH key uses weak algorithm
+
+**Severity:** high
+
+DSA keys are insecure (deprecated since 2015). RSA keys under 3072 bits are below current NIST guidance. Captured ciphertext today can be decrypted later as factoring improves.
+
+**What it checks:**
+- Each `id_*` private key with a paired `.pub` file
+- Algorithm and bit length parsed from `ssh-keygen -l -f <pubkey>`
+- Triggers on DSA or RSA keys under 3072 bits
+
+**Remediation:**
+```bash
+ssh-keygen -t ed25519 -a 100
+# Add the new public key to remote hosts, then remove the weak key.
+```

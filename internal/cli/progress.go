@@ -196,14 +196,20 @@ func (m *scanModel) View() tea.View {
 
 	heroStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
 	taglineStyle := lipgloss.NewStyle().Faint(true).PaddingLeft(1)
+	versionStyle := lipgloss.NewStyle().Faint(true)
 	labelStyle := lipgloss.NewStyle().Width(categoryWidth)
 	greenStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	redStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	dimStyle := lipgloss.NewStyle().Faint(true)
 	countStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 
+	versionLabel := version
+	if version != "dev" {
+		versionLabel = "v" + version
+	}
+
 	b.WriteString(heroStyle.Render(heroLogo) + "\n")
-	b.WriteString(taglineStyle.Render(heroTagline) + "\n\n")
+	b.WriteString(taglineStyle.Render(heroTagline) + " " + versionStyle.Render(versionLabel) + "\n\n")
 
 	count := fmt.Sprintf("%d/%d", m.groupsDone, m.groupsTotal)
 	if m.groupsTotal == 0 {

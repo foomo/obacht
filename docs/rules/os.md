@@ -373,3 +373,100 @@ Content Caching shares downloaded Apple content with other devices on the networ
 **Remediation:**
 
 Disable in System Settings > General > Sharing > Content Caching.
+
+## OS030: Current user has local admin privileges
+
+**Severity:** warn
+
+Daily-use accounts should not have local admin privileges. An attacker compromising a non-admin account cannot install kernel extensions, modify system files, or escalate without a separate authentication step.
+
+**What it checks:**
+- Whether the current user is in the `admin` group
+
+**Remediation:**
+
+Create a separate non-admin daily-use account; reserve the admin account for elevation only.
+
+## OS031: Password not required immediately after screen lock
+
+**Severity:** high
+
+A delay between the screensaver/lock activating and the password prompt allows an attacker with brief physical access to use the machine without authentication.
+
+**What it checks:**
+- Primary: `sysadminctl -screenLock status` — fires when delay > 0 or lock is OFF
+- Fallback (pre-Ventura): `com.apple.screensaver askForPassword` and `askForPasswordDelay`
+- If neither source returns a value, the rule is silent (cannot determine)
+
+**Remediation:**
+
+System Settings > Lock Screen > Require password — set to *Immediately*. CLI:
+```bash
+sysadminctl -screenLock immediate -password -
+```
+
+## OS032: Time Machine destination is not encrypted
+
+**Severity:** warn
+
+Time Machine backups contain the full contents of the system. An unencrypted backup disk leaks all data if the disk is lost or stolen.
+
+**What it checks:**
+- Whether `tmutil destinationinfo` reports `Encrypted: Yes` for the configured destination
+
+**Remediation:**
+
+In Time Machine settings, remove the destination and re-add with **Encrypt Backups** enabled.
+
+## OS033: Time Machine has no recent backup
+
+**Severity:** warn
+
+Stale backups do not protect against ransomware, hardware failure, or accidental deletion. Backups should run within the last 14 days.
+
+**What it checks:**
+- Modification time of the path returned by `tmutil latestbackup`
+
+**Remediation:**
+
+Connect the backup destination and let Time Machine complete a backup.
+
+## OS034: AirPlay Receiver is enabled
+
+**Severity:** warn
+
+AirPlay Receiver allows nearby devices to mirror or send media to this Mac. On developer machines this is unnecessary and increases attack surface.
+
+**What it checks:**
+- Whether `com.apple.controlcenter AirplayRecieverEnabled` (current host) is `1`
+
+**Remediation:**
+
+System Settings > General > AirDrop & Handoff > AirPlay Receiver — turn off.
+
+## OS035: Automatic download of OS updates is disabled
+
+**Severity:** warn
+
+When updates are not pre-downloaded, install lag widens and security patches arrive slower.
+
+**What it checks:**
+- Whether `com.apple.SoftwareUpdate AutomaticDownload` is `1`
+
+**Remediation:**
+
+System Settings > General > Software Update > Automatic Updates — turn on **Download new updates when available**.
+
+## OS036: macOS major version is unsupported
+
+**Severity:** warn
+
+Apple supplies security patches only for the current and previous two major macOS versions. Older versions accumulate unpatched CVEs.
+
+**What it checks:**
+- Major version reported by `sw_vers -productVersion`
+- Triggers if version is below 13 (Ventura)
+
+**Remediation:**
+
+Upgrade to a current macOS version (Ventura 13 or newer).

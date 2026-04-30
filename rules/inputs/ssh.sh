@@ -23,12 +23,21 @@ for f in "$ssh_dir"/id_*; do
   case "$f" in *.pub) continue;; esac
   mode=$(stat -f '%Lp' "$f" 2>/dev/null || stat -c '%a' "$f" 2>/dev/null || echo "")
   type=$(basename "$f" | sed 's/^id_//')
+  pub="${f}.pub"
+  bits=0
+  algo=""
+  if [ -f "$pub" ]; then
+    line=$(ssh-keygen -l -f "$pub" 2>/dev/null || echo "")
+    bits=$(printf '%s' "$line" | awk '{print $1}' | tr -dc '0-9')
+    [ -z "$bits" ] && bits=0
+    algo=$(printf '%s' "$line" | sed -n 's/.*(\([A-Z0-9]*\)).*/\1/p')
+  fi
   if [ "$first" = true ]; then
     first=false
   else
     key_json="$key_json,"
   fi
-  key_json="$key_json{\"path\":\"$f\",\"mode\":\"0$mode\",\"type\":\"$type\"}"
+  key_json="$key_json{\"path\":\"$f\",\"mode\":\"0$mode\",\"type\":\"$type\",\"bits\":$bits,\"algorithm\":\"$algo\"}"
 done
 key_json="$key_json]"
 

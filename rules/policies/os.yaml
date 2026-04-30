@@ -402,3 +402,124 @@ rules:
         not input.content_caching_disabled
         f := {"rule_id": "OS029", "evidence": "Content Caching is enabled"}
       }
+  - id: OS030
+    title: Current user has local admin privileges
+    severity: warn
+    category: os
+    description: |
+      Daily-use accounts should not have local admin privileges. An
+      attacker compromising a non-admin account cannot install kernel
+      extensions, modify system files, or escalate without a separate
+      authentication step.
+    remediation: "Create a separate non-admin daily-use account; reserve admin account for elevation only"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        input.user_is_admin
+        f := {"rule_id": "OS030", "evidence": "Current user has local admin privileges"}
+      }
+  - id: OS031
+    title: Password not required immediately after screen lock
+    severity: high
+    category: os
+    description: |
+      A delay between the screensaver/lock activating and the password
+      prompt allows an attacker with brief physical access to use the
+      machine without authentication.
+    remediation: "System Settings > Lock Screen > Require password — set to Immediately (or run: sysadminctl -screenLock immediate -password -)"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.password_required_on_lock
+        input.password_lock_delay_seconds > 0
+        f := {
+          "rule_id": "OS031",
+          "evidence": sprintf("Password not required immediately after screen lock (delay: %ds)", [input.password_lock_delay_seconds]),
+        }
+      }
+      findings contains f if {
+        input.os == "darwin"
+        input.password_lock_delay_seconds == -2
+        f := {
+          "rule_id": "OS031",
+          "evidence": "Screen lock is disabled — no password required after screensaver",
+        }
+      }
+  - id: OS032
+    title: Time Machine destination is not encrypted
+    severity: warn
+    category: os
+    description: |
+      Time Machine backups contain the full contents of the system.
+      An unencrypted backup disk leaks all data if the disk is lost
+      or stolen.
+    remediation: "In Time Machine settings, remove the destination and re-add with 'Encrypt Backups' enabled"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        input.timemachine_enabled
+        not input.timemachine_destination_encrypted
+        f := {"rule_id": "OS032", "evidence": "Time Machine destination is not encrypted"}
+      }
+  - id: OS033
+    title: Time Machine has no recent backup
+    severity: warn
+    category: os
+    description: |
+      Stale backups do not protect against ransomware, hardware failure,
+      or accidental deletion. Backups should run within the last 14 days.
+    remediation: "Connect the backup destination and let Time Machine complete a backup"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        input.timemachine_enabled
+        not input.timemachine_recent_backup
+        f := {"rule_id": "OS033", "evidence": "Time Machine has no backup within the last 14 days"}
+      }
+  - id: OS034
+    title: AirPlay Receiver is enabled
+    severity: warn
+    category: os
+    description: |
+      AirPlay Receiver allows nearby devices to mirror or send media
+      to this Mac. On developer machines this is unnecessary and
+      increases attack surface.
+    remediation: "System Settings > General > AirDrop & Handoff > AirPlay Receiver — turn off"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        input.airplay_receiver_enabled
+        f := {"rule_id": "OS034", "evidence": "AirPlay Receiver is enabled"}
+      }
+  - id: OS035
+    title: Automatic download of OS updates is disabled
+    severity: warn
+    category: os
+    description: |
+      When updates are not pre-downloaded, install lag widens and
+      security patches arrive slower.
+    remediation: "System Settings > General > Software Update > Automatic Updates — turn on Download new updates when available"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        not input.os_auto_download_enabled
+        f := {"rule_id": "OS035", "evidence": "Automatic download of OS updates is disabled"}
+      }
+  - id: OS036
+    title: macOS major version is unsupported
+    severity: warn
+    category: os
+    description: |
+      Apple supplies security patches only for the current and previous
+      two major macOS versions. Older versions accumulate unpatched CVEs.
+    remediation: "Upgrade to a current macOS version (Ventura 13 or newer)"
+    policy: |
+      findings contains f if {
+        input.os == "darwin"
+        input.macos_major_version > 0
+        input.macos_major_version < 13
+        f := {
+          "rule_id": "OS036",
+          "evidence": sprintf("macOS major version %d is no longer receiving security updates (minimum supported: 13)", [input.macos_major_version]),
+        }
+      }
