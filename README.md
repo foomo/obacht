@@ -81,6 +81,34 @@ Requires Go 1.26+.
 
 </details>
 
+## Usage
+
+```shell
+$ obacht --help
+Security configuration scanner for developer environments
+
+Usage:
+  obacht [flags]
+  obacht [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  doctor      Check obacht dependencies and configuration
+  explain     Show detailed information about a rule
+  help        Help about any command
+  scan        Scan the local development environment for security issues
+  version     Print version information
+
+Flags:
+      --format string      output format (pretty, json) (default "pretty")
+  -h, --help               help for obacht
+      --rules-dir string   use rules from this directory instead of embedded rules
+      --verbose            enable verbose output
+      --version            print version information
+
+Use "obacht [command] --help" for more information about a command.
+```
+
 ## Resources
 
 - [Foomo Security](https://www.foomo.org/blog/tag/security/)
