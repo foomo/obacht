@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 53 built-in rules across 11 categories.
+obacht includes 62 built-in rules across 11 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -45,6 +45,13 @@ obacht includes 53 built-in rules across 11 categories.
 | OS027  | OS          | Media Sharing is enabled                             | warn     |
 | OS028  | OS          | File Sharing (SMB) is enabled                        | warn     |
 | OS029  | OS          | Content Caching is enabled                           | warn     |
+| OS030  | OS          | Current user has local admin privileges              | warn     |
+| OS031  | OS          | Password not required immediately after screen lock  | high     |
+| OS032  | OS          | Time Machine destination is not encrypted            | warn     |
+| OS033  | OS          | Time Machine has no recent backup                    | warn     |
+| OS034  | OS          | AirPlay Receiver is enabled                          | warn     |
+| OS035  | OS          | Automatic download of OS updates is disabled         | warn     |
+| OS036  | OS          | macOS major version is unsupported                   | warn     |
 | PTH001 | PATH        | World-writable directory in PATH                     | high     |
 | PTH002 | PATH        | Relative path entry in PATH                          | warn     |
 | PRV001 | Privacy     | No password manager application detected             | warn     |
@@ -56,5 +63,6 @@ obacht includes 53 built-in rules across 11 categories.
 | SSH002 | SSH         | SSH directory has weak permissions                   | high     |
 | SSH003 | SSH         | SSH StrictHostKeyChecking is disabled                | high     |
 | SSH004 | SSH         | SSH agent forwarding is enabled globally             | warn     |
+| SSH005 | SSH         | SSH key uses weak algorithm                          | high     |
 | TOL001 | Tools       | Security-relevant tool is missing                    | info     |
 | TOL002 | Tools       | Homebrew auto-update is disabled                     | warn     |

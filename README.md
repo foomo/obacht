@@ -79,6 +79,11 @@ Requires Go 1.26+.
 
 </details>
 
+## Resources
+
+- [Foomo Security](https://www.foomo.org/blog/tag/security/)
+- [Pareto Security](https://github.com/ParetoSecurity/pareto-mac)
+
 ## How to Contribute
 
 Contributions are welcome! Please read the [contributing guide](CONTRIBUTING.md).

@@ -145,6 +145,80 @@ if [ "$content_caching" = "1" ]; then
   content_caching_disabled=false
 fi
 
+# Current user is local admin.
+user_is_admin=false
+if groups 2>/dev/null | tr ' ' '\n' | grep -qx admin; then
+  user_is_admin=true
+fi
+
+# Password required immediately after screen lock.
+# Modern macOS (Ventura+) uses sysadminctl; pre-Ventura uses legacy defaults keys.
+# Sentinels for password_lock_delay_seconds:
+#   -1 = unknown (rule skipped)
+#   -2 = screen lock disabled (rule fires with different evidence)
+#    0 = immediate (rule passes)
+#   >0 = delay in seconds (rule fires)
+password_required_on_lock=false
+password_lock_delay_seconds=-1
+sl_out=$(sysadminctl -screenLock status 2>&1 || true)
+if printf '%s' "$sl_out" | grep -qi "immediate"; then
+  password_required_on_lock=true
+  password_lock_delay_seconds=0
+elif printf '%s' "$sl_out" | grep -qiE 'set to [0-9]+'; then
+  n=$(printf '%s' "$sl_out" | grep -oE 'set to [0-9]+' | grep -oE '[0-9]+' | head -1)
+  [ -n "$n" ] && password_lock_delay_seconds=$n
+elif printf '%s' "$sl_out" | grep -qiE 'screenLock is OFF|disabled'; then
+  password_lock_delay_seconds=-2
+fi
+# Fallback to legacy keys (pre-Ventura) when sysadminctl gave no answer.
+if [ "$password_lock_delay_seconds" = "-1" ]; then
+  ask_pw=$(defaults read com.apple.screensaver askForPassword 2>/dev/null | tr -dc '0-9')
+  ask_pw_delay=$(defaults read com.apple.screensaver askForPasswordDelay 2>/dev/null | tr -dc '0-9')
+  if [ -n "$ask_pw" ] && [ -n "$ask_pw_delay" ]; then
+    password_lock_delay_seconds=$ask_pw_delay
+    if [ "$ask_pw" = "1" ] && [ "$ask_pw_delay" = "0" ]; then
+      password_required_on_lock=true
+    fi
+  fi
+fi
+
+# Time Machine destination encryption.
+timemachine_destination_encrypted=true
+if [ "$timemachine_enabled" = "true" ]; then
+  if ! tmutil destinationinfo 2>/dev/null | grep -qi "Encrypted *: *Yes"; then
+    timemachine_destination_encrypted=false
+  fi
+fi
+
+# Time Machine recent backup (within 14 days).
+timemachine_recent_backup=true
+if [ "$timemachine_enabled" = "true" ]; then
+  latest=$(tmutil latestbackup 2>/dev/null || echo "")
+  if [ -z "$latest" ] || [ ! -e "$latest" ]; then
+    timemachine_recent_backup=false
+  else
+    now=$(date +%s)
+    mtime=$(stat -f '%m' "$latest" 2>/dev/null || stat -c '%Y' "$latest" 2>/dev/null || echo 0)
+    age=$((now - mtime))
+    if [ "$age" -gt 1209600 ]; then
+      timemachine_recent_backup=false
+    fi
+  fi
+fi
+
+# AirPlay Receiver.
+airplay_receiver_enabled=false
+airplay_val=$(defaults -currentHost read com.apple.controlcenter AirplayRecieverEnabled 2>/dev/null || echo "")
+[ "$airplay_val" = "1" ] && airplay_receiver_enabled=true
+
+# Automatic download of OS updates.
+os_auto_download_enabled=$(bool_check defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload "" "" "1")
+
+# macOS major version.
+macos_major=$(sw_vers -productVersion 2>/dev/null | cut -d. -f1)
+macos_major=$(printf '%s' "$macos_major" | tr -dc '0-9')
+[ -z "$macos_major" ] && macos_major=0
+
 cat <<EOF
 {
   "os": "$os",
@@ -176,6 +250,14 @@ cat <<EOF
   "bluetooth_sharing_disabled": $bluetooth_sharing_disabled,
   "media_sharing_disabled": $media_sharing_disabled,
   "file_sharing_disabled": $file_sharing_disabled,
-  "content_caching_disabled": $content_caching_disabled
+  "content_caching_disabled": $content_caching_disabled,
+  "user_is_admin": $user_is_admin,
+  "password_required_on_lock": $password_required_on_lock,
+  "password_lock_delay_seconds": $password_lock_delay_seconds,
+  "timemachine_destination_encrypted": $timemachine_destination_encrypted,
+  "timemachine_recent_backup": $timemachine_recent_backup,
+  "airplay_receiver_enabled": $airplay_receiver_enabled,
+  "os_auto_download_enabled": $os_auto_download_enabled,
+  "macos_major_version": $macos_major
 }
 EOF
