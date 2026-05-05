@@ -1,23 +1,7 @@
 [tools]
-# https://mise-tools.jdx.dev/tools/opa
-opa = "latest"
 # https://mise-tools.jdx.dev/tools/bun
-bun = "1.3.11"
-# https://mise-tools.jdx.dev/tools/regal
-regal = "0.39.0"
+bun = "1.3.13"
 # https://mise-tools.jdx.dev/tools/lefthook
-lefthook = "2.1.4"
+lefthook = "2.1.6"
 # https://mise-tools.jdx.dev/tools/golangci-lint
-golangci-lint = "2.11.4"
-
-[tasks."opa:fmt"]
-description = "format opa files"
-run = "opa fmt -w ./rules/policies"
-
-[tasks."opa:lint"]
-description = "lint opa files"
-run = "regal lint ./rules/policies"
-
-[tasks."opa:fix"]
-description = "lint opa files"
-run = "regal fix ./rules/policies"
+golangci-lint = "2.12.1"
