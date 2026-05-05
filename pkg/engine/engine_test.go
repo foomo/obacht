@@ -190,3 +190,32 @@ func TestEvaluate_RuleLevelOverride(t *testing.T) {
 	cr := result.Results[0]
 	assert.Equal(t, schema.StatusFail, cr.Status)
 }
+
+var testPolicySkip = `package obacht.test
+
+import rego.v1
+
+skips contains s if {
+    input.disk_connected == false
+    s := {"rule_id": "SSH002", "evidence": "disk not connected"}
+}
+`
+
+func TestEvaluate_RegoSkip_MapsToStatusSkip(t *testing.T) {
+	ruleFiles := []schema.RulesFile{
+		{
+			Input:  `printf '{"disk_connected": false}'`,
+			Policy: testPolicySkip,
+			Rules:  testRules,
+		},
+	}
+
+	result, err := engine.Evaluate(t.Context(), ruleFiles)
+	require.NoError(t, err)
+	require.Len(t, result.Results, 1)
+
+	cr := result.Results[0]
+	assert.Equal(t, "SSH002", cr.RuleID)
+	assert.Equal(t, schema.StatusSkip, cr.Status)
+	assert.Equal(t, "disk not connected", cr.Evidence)
+}
