@@ -418,6 +418,8 @@ Time Machine backups contain the full contents of the system. An unencrypted bac
 
 In Time Machine settings, remove the destination and re-add with **Encrypt Backups** enabled.
 
+**Note:** This check is skipped when the Time Machine destination is not currently mounted, since the encryption status read from cached metadata can be stale.
+
 ## OS033: Time Machine has no recent backup
 
 **Severity:** warn
@@ -430,6 +432,8 @@ Stale backups do not protect against ransomware, hardware failure, or accidental
 **Remediation:**
 
 Connect the backup destination and let Time Machine complete a backup.
+
+**Note:** This check is skipped when the Time Machine destination is not currently mounted. Backup recency cannot be evaluated without access to the destination volume.
 
 ## OS034: AirPlay Receiver is enabled
 

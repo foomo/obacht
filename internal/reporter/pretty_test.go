@@ -195,9 +195,91 @@ func TestPrettyReporter_SkipMarker(t *testing.T) {
 	require.NoError(t, err)
 
 	out := buf.String()
+	plain := stripANSI(out)
 
 	// Skip uses a dash.
-	assert.Contains(t, stripANSI(out), "- GIT001")
+	assert.Contains(t, plain, "- GIT001")
+	// Skip renders a [skip] tag.
+	assert.Contains(t, plain, "[skip]")
+}
+
+func TestPrettyReporter_SkipShowsReason(t *testing.T) {
+	t.Run("single-line evidence", func(t *testing.T) {
+		results := []schema.CheckResult{
+			{
+				RuleID:   "OS032",
+				Title:    "Time Machine destination is not encrypted",
+				Severity: schema.SeverityWarn,
+				Category: "OS",
+				Status:   schema.StatusSkip,
+				Evidence: "destination not connected",
+			},
+		}
+		sr := schema.NewScanResult(results)
+
+		var buf bytes.Buffer
+		r := reporter.NewPrettyReporter()
+		err := r.Report(&buf, &sr)
+		require.NoError(t, err)
+
+		out := stripANSI(buf.String())
+
+		assert.Contains(t, out, "Reason: destination not connected")
+	})
+
+	t.Run("multi-line evidence", func(t *testing.T) {
+		results := []schema.CheckResult{
+			{
+				RuleID:   "OS033",
+				Title:    "Time Machine has no recent backup",
+				Severity: schema.SeverityWarn,
+				Category: "OS",
+				Status:   schema.StatusSkip,
+				Evidence: "alpha; bravo",
+			},
+		}
+		sr := schema.NewScanResult(results)
+
+		var buf bytes.Buffer
+		r := reporter.NewPrettyReporter()
+		err := r.Report(&buf, &sr)
+		require.NoError(t, err)
+
+		out := stripANSI(buf.String())
+
+		// Header line with no inline value.
+		assert.Contains(t, out, "      Reason:\n")
+		// Each part as its own bullet.
+		assert.Contains(t, out, "        - alpha\n")
+		assert.Contains(t, out, "        - bravo\n")
+	})
+}
+
+func TestPrettyReporter_SkipNoFixLine(t *testing.T) {
+	results := []schema.CheckResult{
+		{
+			RuleID:      "OS032",
+			Title:       "Time Machine destination is not encrypted",
+			Severity:    schema.SeverityWarn,
+			Category:    "OS",
+			Status:      schema.StatusSkip,
+			Evidence:    "destination not connected",
+			Remediation: "Connect Time Machine destination first",
+		},
+	}
+	sr := schema.NewScanResult(results)
+
+	var buf bytes.Buffer
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, &sr)
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	// Fix line must not appear for skip rows.
+	assert.NotContains(t, out, "Fix:")
+	// Reason line should still appear.
+	assert.Contains(t, out, "Reason: destination not connected")
 }
 
 func TestPrettyReporter_ErrorMarker(t *testing.T) {

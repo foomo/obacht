@@ -102,11 +102,15 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 				icon = SeverityColorStyle(cr.Severity).Render("!")
 			}
 
-			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
+			switch cr.Status {
+			case schema.StatusFail, schema.StatusError:
 				sevStyle := SeverityColorStyle(cr.Severity)
 				sevLabel := sevStyle.Render("[" + string(cr.Severity) + "]")
 				fmt.Fprintf(w, "  %s %s %s: %s\n", icon, cr.RuleID, sevLabel, cr.Title)
-			} else {
+			case schema.StatusSkip:
+				skipLabel := yellowStyle.Render("[skip]")
+				fmt.Fprintf(w, "  %s %s %s: %s\n", icon, cr.RuleID, skipLabel, cr.Title)
+			default:
 				fmt.Fprintf(w, "  %s %s: %s\n", icon, cr.RuleID, cr.Title)
 			}
 
@@ -130,6 +134,23 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 
 				if cr.Remediation != "" {
 					fmt.Fprintf(w, "      Fix: %s\n", cr.Remediation)
+				}
+			}
+
+			// For skips, show reason (evidence) but no Fix line.
+			if cr.Status == schema.StatusSkip && cr.Evidence != "" {
+				parts := splitEvidence(cr.Evidence)
+				switch len(parts) {
+				case 0:
+					// All-whitespace evidence — render nothing.
+				case 1:
+					fmt.Fprintf(w, "      Reason: %s\n", parts[0])
+				default:
+					fmt.Fprintln(w, "      Reason:")
+
+					for _, p := range parts {
+						fmt.Fprintf(w, "        - %s\n", p)
+					}
 				}
 			}
 		}
