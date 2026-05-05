@@ -133,7 +133,7 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 				}
 
 				if cr.Remediation != "" {
-					fmt.Fprintf(w, "      Fix: %s\n", cr.Remediation)
+					writeRemediation(w, "      ", "Fix: ", cr.Remediation)
 				}
 			}
 
@@ -197,6 +197,26 @@ func splitEvidence(s string) []string {
 	}
 
 	return parts
+}
+
+// writeRemediation renders a (possibly multiline) remediation string with the
+// first line attached to label and any continuation lines aligned at the
+// indent column. Trailing newlines are trimmed so YAML literal blocks do not
+// produce a dangling blank line.
+func writeRemediation(w io.Writer, indent, label, remediation string) {
+	text := strings.TrimRight(remediation, "\n")
+	lines := strings.Split(text, "\n")
+
+	fmt.Fprintf(w, "%s%s%s\n", indent, label, lines[0])
+
+	for _, line := range lines[1:] {
+		if line == "" {
+			fmt.Fprintln(w)
+			continue
+		}
+
+		fmt.Fprintf(w, "%s%s\n", indent, line)
+	}
 }
 
 // SeverityColorStyle returns the lipgloss style for the given severity level.
