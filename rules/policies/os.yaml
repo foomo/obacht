@@ -445,6 +445,14 @@ rules:
           "evidence": "Screen lock is disabled — no password required after screensaver",
         }
       }
+      skips contains s if {
+        input.os == "darwin"
+        input.password_lock_delay_seconds == -1
+        s := {
+          "rule_id": "OS031",
+          "evidence": "Could not determine screen-lock password delay (sysadminctl unavailable and legacy askForPasswordDelay unreadable)",
+        }
+      }
   - id: OS032
     title: Time Machine destination is not encrypted
     severity: warn

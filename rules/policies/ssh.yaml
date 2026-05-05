@@ -100,3 +100,11 @@ rules:
           "evidence": sprintf("SSH key %s uses weak algorithm: RSA/%d bits (minimum 3072)", [key.path, key.bits]),
         }
       }
+      skips contains s if {
+        key := input.keys[_]
+        key.bits == 0
+        s := {
+          "rule_id": "SSH005",
+          "evidence": sprintf("Could not read SSH key bits: %s (ssh-keygen failed)", [key.path]),
+        }
+      }

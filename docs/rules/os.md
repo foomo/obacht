@@ -396,7 +396,8 @@ A delay between the screensaver/lock activating and the password prompt allows a
 **What it checks:**
 - Primary: `sysadminctl -screenLock status` — fires when delay > 0 or lock is OFF
 - Fallback (pre-Ventura): `com.apple.screensaver askForPassword` and `askForPasswordDelay`
-- If neither source returns a value, the rule is silent (cannot determine)
+
+**Note:** This check is skipped when neither `sysadminctl` nor the legacy `askForPasswordDelay` defaults key returns a usable value, since the screen-lock delay cannot be determined.
 
 **Remediation:**
 
