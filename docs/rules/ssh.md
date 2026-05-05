@@ -74,6 +74,8 @@ DSA keys are insecure (deprecated since 2015). RSA keys under 3072 bits are belo
 - Algorithm and bit length parsed from `ssh-keygen -l -f <pubkey>`
 - Triggers on DSA or RSA keys under 3072 bits
 
+**Note:** This check is skipped per-key when `ssh-keygen` cannot read the public key (corrupted file, permission denied), since the algorithm and bit length cannot be determined.
+
 **Remediation:**
 ```bash
 ssh-keygen -t ed25519 -a 100

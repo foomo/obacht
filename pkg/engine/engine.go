@@ -229,20 +229,21 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 		return results, nil
 	}
 
-	findings, err := evalRego(ctx, g.Policy, inputResult.Data)
+	findings, skips, err := evalRego(ctx, g.Policy, inputResult.Data)
 	if err != nil {
 		return nil, err
 	}
 
-	// Group findings by rule_id. A single rule may produce multiple findings
-	// (e.g., one per offending PATH dir); aggregate their evidence strings so
-	// callers see every match rather than an arbitrary one.
 	findingMap := make(map[string][]opaFinding)
 	for _, f := range findings {
 		findingMap[f.RuleID] = append(findingMap[f.RuleID], f)
 	}
 
-	// Build check results.
+	skipMap := make(map[string][]opaFinding)
+	for _, s := range skips {
+		skipMap[s.RuleID] = append(skipMap[s.RuleID], s)
+	}
+
 	for _, rule := range g.Rules {
 		cr := schema.CheckResult{
 			RuleID:      rule.ID,
@@ -252,17 +253,14 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 			Remediation: rule.Remediation,
 		}
 
-		if fs, found := findingMap[rule.ID]; found {
+		switch {
+		case len(findingMap[rule.ID]) > 0:
 			cr.Status = schema.StatusFail
-
-			parts := make([]string, 0, len(fs))
-			for _, f := range fs {
-				parts = append(parts, f.Evidence)
-			}
-
-			sort.Strings(parts)
-			cr.Evidence = strings.Join(parts, "; ")
-		} else {
+			cr.Evidence = joinEvidence(findingMap[rule.ID])
+		case len(skipMap[rule.ID]) > 0:
+			cr.Status = schema.StatusSkip
+			cr.Evidence = joinEvidence(skipMap[rule.ID])
+		default:
 			cr.Status = schema.StatusPass
 		}
 
@@ -272,8 +270,22 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 	return results, nil
 }
 
-// evalRego evaluates a rego policy string against the given input data.
-func evalRego(ctx context.Context, policy string, input any) ([]opaFinding, error) {
+// joinEvidence sorts and joins evidence strings from multiple records for the
+// same rule_id with "; ". Sorting keeps output stable across runs.
+func joinEvidence(items []opaFinding) string {
+	parts := make([]string, 0, len(items))
+	for _, it := range items {
+		parts = append(parts, it.Evidence)
+	}
+
+	sort.Strings(parts)
+
+	return strings.Join(parts, "; ")
+}
+
+// evalRego evaluates a rego policy string against the given input data and
+// returns both findings and skips collections.
+func evalRego(ctx context.Context, policy string, input any) ([]opaFinding, []opaFinding, error) {
 	opts := []func(*rego.Rego){
 		rego.Query("data.obacht"),
 		rego.Input(input),
@@ -282,18 +294,20 @@ func evalRego(ctx context.Context, policy string, input any) ([]opaFinding, erro
 
 	rs, err := rego.New(opts...).Eval(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("evaluating rego: %w", err)
+		return nil, nil, fmt.Errorf("evaluating rego: %w", err)
 	}
 
-	return extractFindings(rs), nil
+	return extractCollection(rs, "findings"), extractCollection(rs, "skips"), nil
 }
 
-// extractFindings walks the OPA result set and collects all findings.
-func extractFindings(rs rego.ResultSet) []opaFinding {
-	var findings []opaFinding
+// extractCollection walks the OPA result set and collects all entries from the
+// named collection (e.g. "findings" or "skips"). Each entry must be a map with
+// a "rule_id" string field; "evidence" is optional.
+func extractCollection(rs rego.ResultSet, name string) []opaFinding {
+	var out []opaFinding
 
 	if len(rs) == 0 {
-		return findings
+		return out
 	}
 
 	for _, result := range rs {
@@ -309,17 +323,17 @@ func extractFindings(rs rego.ResultSet) []opaFinding {
 					continue
 				}
 
-				rawFindings, ok := catMap["findings"]
+				raw, ok := catMap[name]
 				if !ok {
 					continue
 				}
 
-				findingsSlice, ok := rawFindings.([]any)
+				slice, ok := raw.([]any)
 				if !ok {
 					continue
 				}
 
-				for _, rf := range findingsSlice {
+				for _, rf := range slice {
 					fm, ok := rf.(map[string]any)
 					if !ok {
 						continue
@@ -335,12 +349,12 @@ func extractFindings(rs rego.ResultSet) []opaFinding {
 					}
 
 					if f.RuleID != "" {
-						findings = append(findings, f)
+						out = append(out, f)
 					}
 				}
 			}
 		}
 	}
 
-	return findings
+	return out
 }

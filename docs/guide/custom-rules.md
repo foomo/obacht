@@ -157,6 +157,40 @@ If no input script is defined (neither inline nor in `inputs/`), the rule is mar
 from the given directory run; built-in rules are not loaded. To customise a built-in rule,
 copy it into your own rules directory and edit it there.
 
+## Skipping a rule from Rego
+
+When a rule cannot evaluate because runtime state needed for the check is unavailable — a disconnected disk, an unreachable network, a daemon that isn't running — emit a `skips` entry instead of a `findings` entry. The result shows as `skip` rather than a misleading `pass` or `fail`.
+
+```rego
+skips contains s if {
+  input.os == "darwin"
+  input.timemachine_enabled
+  not input.timemachine_destination_connected
+  s := {
+    "rule_id": "OS033",
+    "evidence": "Time Machine destination not connected — cannot evaluate backup recency",
+  }
+}
+
+findings contains f if {
+  input.os == "darwin"
+  input.timemachine_enabled
+  input.timemachine_destination_connected
+  not input.timemachine_recent_backup
+  f := {"rule_id": "OS033", "evidence": "Time Machine has no backup within the last 14 days"}
+}
+```
+
+The `skips` collection has the same shape as `findings`: a `rule_id` string and an `evidence` string. The engine looks up both collections by rule ID. If a rule emits both a fail and a skip in the same evaluation, fail wins — the rule is reported as `fail`.
+
+**Skip vs pass vs fail:**
+
+- **`skip`** — the check could not run because required state is unavailable. Tell the user *why*.
+- **`pass`** — the check ran and the system is in the desired state.
+- **`fail`** — the check ran and the system is in an undesired state.
+
+A "feature off" condition is *not* a skip. If a rule has nothing meaningful to say when a feature is disabled (e.g. Time Machine off, covered by a separate rule), the rule simply passes silently.
+
 ## Usage
 
 ```bash

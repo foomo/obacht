@@ -396,7 +396,8 @@ A delay between the screensaver/lock activating and the password prompt allows a
 **What it checks:**
 - Primary: `sysadminctl -screenLock status` — fires when delay > 0 or lock is OFF
 - Fallback (pre-Ventura): `com.apple.screensaver askForPassword` and `askForPasswordDelay`
-- If neither source returns a value, the rule is silent (cannot determine)
+
+**Note:** This check is skipped when neither `sysadminctl` nor the legacy `askForPasswordDelay` defaults key returns a usable value, since the screen-lock delay cannot be determined.
 
 **Remediation:**
 
@@ -418,6 +419,8 @@ Time Machine backups contain the full contents of the system. An unencrypted bac
 
 In Time Machine settings, remove the destination and re-add with **Encrypt Backups** enabled.
 
+**Note:** This check is skipped when the Time Machine destination is not currently mounted, since the encryption status read from cached metadata can be stale.
+
 ## OS033: Time Machine has no recent backup
 
 **Severity:** warn
@@ -430,6 +433,8 @@ Stale backups do not protect against ransomware, hardware failure, or accidental
 **Remediation:**
 
 Connect the backup destination and let Time Machine complete a backup.
+
+**Note:** This check is skipped when the Time Machine destination is not currently mounted. Backup recency cannot be evaluated without access to the destination volume.
 
 ## OS034: AirPlay Receiver is enabled
 

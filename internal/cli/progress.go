@@ -157,6 +157,7 @@ func (m *scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
+
 		m.spin, cmd = m.spin.Update(msg)
 
 		return m, cmd

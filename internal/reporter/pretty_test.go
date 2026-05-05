@@ -195,9 +195,94 @@ func TestPrettyReporter_SkipMarker(t *testing.T) {
 	require.NoError(t, err)
 
 	out := buf.String()
+	plain := stripANSI(out)
 
 	// Skip uses a dash.
-	assert.Contains(t, stripANSI(out), "- GIT001")
+	assert.Contains(t, plain, "- GIT001")
+	// Skip renders a [skip] tag.
+	assert.Contains(t, plain, "[skip]")
+}
+
+func TestPrettyReporter_SkipShowsReason(t *testing.T) {
+	t.Run("single-line evidence", func(t *testing.T) {
+		results := []schema.CheckResult{
+			{
+				RuleID:   "OS032",
+				Title:    "Time Machine destination is not encrypted",
+				Severity: schema.SeverityWarn,
+				Category: "OS",
+				Status:   schema.StatusSkip,
+				Evidence: "destination not connected",
+			},
+		}
+		sr := schema.NewScanResult(results)
+
+		var buf bytes.Buffer
+
+		r := reporter.NewPrettyReporter()
+		err := r.Report(&buf, &sr)
+		require.NoError(t, err)
+
+		out := stripANSI(buf.String())
+
+		assert.Contains(t, out, "Reason: destination not connected")
+	})
+
+	t.Run("multi-line evidence", func(t *testing.T) {
+		results := []schema.CheckResult{
+			{
+				RuleID:   "OS033",
+				Title:    "Time Machine has no recent backup",
+				Severity: schema.SeverityWarn,
+				Category: "OS",
+				Status:   schema.StatusSkip,
+				Evidence: "alpha; bravo",
+			},
+		}
+		sr := schema.NewScanResult(results)
+
+		var buf bytes.Buffer
+
+		r := reporter.NewPrettyReporter()
+		err := r.Report(&buf, &sr)
+		require.NoError(t, err)
+
+		out := stripANSI(buf.String())
+
+		// Header line with no inline value.
+		assert.Contains(t, out, "      Reason:\n")
+		// Each part as its own bullet.
+		assert.Contains(t, out, "        - alpha\n")
+		assert.Contains(t, out, "        - bravo\n")
+	})
+}
+
+func TestPrettyReporter_SkipNoFixLine(t *testing.T) {
+	results := []schema.CheckResult{
+		{
+			RuleID:      "OS032",
+			Title:       "Time Machine destination is not encrypted",
+			Severity:    schema.SeverityWarn,
+			Category:    "OS",
+			Status:      schema.StatusSkip,
+			Evidence:    "destination not connected",
+			Remediation: "Connect Time Machine destination first",
+		},
+	}
+	sr := schema.NewScanResult(results)
+
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, &sr)
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	// Fix line must not appear for skip rows.
+	assert.NotContains(t, out, "Fix:")
+	// Reason line should still appear.
+	assert.Contains(t, out, "Reason: destination not connected")
 }
 
 func TestPrettyReporter_ErrorMarker(t *testing.T) {
@@ -312,6 +397,57 @@ func TestPrettyReporter_EmptyEvidence(t *testing.T) {
 	assert.Contains(t, out, "ENV999")
 	// No Evidence line at all.
 	assert.NotContains(t, out, "Evidence")
+}
+
+func TestPrettyReporter_MultilineRemediation(t *testing.T) {
+	t.Run("PRV004-shaped multiline remediation", func(t *testing.T) {
+		results := []schema.CheckResult{
+			{
+				RuleID:   "PRV004",
+				Title:    "Untrusted DNS resolver is configured",
+				Severity: schema.SeverityWarn,
+				Category: "Privacy",
+				Status:   schema.StatusFail,
+				Evidence: "Untrusted DNS resolver(s): 192.168.1.1",
+				Remediation: "Set DNS to a trusted resolver in System Settings > Network > Wi-Fi/Ethernet > Details > DNS.\n" +
+					"Recommended IPs:\n" +
+					"  Cloudflare: 1.1.1.1, 1.0.0.1\n" +
+					"  Quad9:      9.9.9.9, 149.112.112.112\n",
+			},
+		}
+		sr := schema.NewScanResult(results)
+
+		var buf bytes.Buffer
+
+		r := reporter.NewPrettyReporter()
+		err := r.Report(&buf, &sr)
+		require.NoError(t, err)
+
+		out := stripANSI(buf.String())
+
+		// First line attached to the Fix label.
+		assert.Contains(t, out, "      Fix: Set DNS to a trusted resolver in System Settings > Network > Wi-Fi/Ethernet > Details > DNS.\n")
+		// Continuation lines aligned at the 6-space label column.
+		assert.Contains(t, out, "      Recommended IPs:\n")
+		assert.Contains(t, out, "        Cloudflare: 1.1.1.1, 1.0.0.1\n")
+		assert.Contains(t, out, "        Quad9:      9.9.9.9, 149.112.112.112\n")
+		// Continuation lines must not collapse to column 0.
+		assert.NotContains(t, out, "\nRecommended IPs:")
+		assert.NotContains(t, out, "\n  Cloudflare:")
+		// Trailing newline must not produce a dangling indented blank line.
+		assert.NotContains(t, out, "\n      \n")
+	})
+
+	t.Run("single-line remediation unchanged", func(t *testing.T) {
+		var buf bytes.Buffer
+
+		r := reporter.NewPrettyReporter()
+		err := r.Report(&buf, sampleScanResult())
+		require.NoError(t, err)
+
+		out := stripANSI(buf.String())
+		assert.Contains(t, out, "      Fix: Run: chmod 700 ~/.ssh\n")
+	})
 }
 
 func TestPrettyReporter_TrailingSeparator(t *testing.T) {

@@ -102,11 +102,15 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 				icon = SeverityColorStyle(cr.Severity).Render("!")
 			}
 
-			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
+			switch cr.Status {
+			case schema.StatusFail, schema.StatusError:
 				sevStyle := SeverityColorStyle(cr.Severity)
 				sevLabel := sevStyle.Render("[" + string(cr.Severity) + "]")
 				fmt.Fprintf(w, "  %s %s %s: %s\n", icon, cr.RuleID, sevLabel, cr.Title)
-			} else {
+			case schema.StatusSkip:
+				skipLabel := yellowStyle.Render("[skip]")
+				fmt.Fprintf(w, "  %s %s %s: %s\n", icon, cr.RuleID, skipLabel, cr.Title)
+			default:
 				fmt.Fprintf(w, "  %s %s: %s\n", icon, cr.RuleID, cr.Title)
 			}
 
@@ -129,7 +133,24 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 				}
 
 				if cr.Remediation != "" {
-					fmt.Fprintf(w, "      Fix: %s\n", cr.Remediation)
+					writeRemediation(w, "      ", "Fix: ", cr.Remediation)
+				}
+			}
+
+			// For skips, show reason (evidence) but no Fix line.
+			if cr.Status == schema.StatusSkip && cr.Evidence != "" {
+				parts := splitEvidence(cr.Evidence)
+				switch len(parts) {
+				case 0:
+					// All-whitespace evidence — render nothing.
+				case 1:
+					fmt.Fprintf(w, "      Reason: %s\n", parts[0])
+				default:
+					fmt.Fprintln(w, "      Reason:")
+
+					for _, p := range parts {
+						fmt.Fprintf(w, "        - %s\n", p)
+					}
 				}
 			}
 		}
@@ -176,6 +197,26 @@ func splitEvidence(s string) []string {
 	}
 
 	return parts
+}
+
+// writeRemediation renders a (possibly multiline) remediation string with the
+// first line attached to label and any continuation lines aligned at the
+// indent column. Trailing newlines are trimmed so YAML literal blocks do not
+// produce a dangling blank line.
+func writeRemediation(w io.Writer, indent, label, remediation string) {
+	text := strings.TrimRight(remediation, "\n")
+	lines := strings.Split(text, "\n")
+
+	fmt.Fprintf(w, "%s%s%s\n", indent, label, lines[0])
+
+	for _, line := range lines[1:] {
+		if line == "" {
+			fmt.Fprintln(w)
+			continue
+		}
+
+		fmt.Fprintf(w, "%s%s\n", indent, line)
+	}
 }
 
 // SeverityColorStyle returns the lipgloss style for the given severity level.
