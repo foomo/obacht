@@ -36,3 +36,32 @@ rules:
           "evidence": "HOMEBREW_NO_AUTO_UPDATE is set, preventing automatic formula updates",
         }
       }
+  - id: TOL003
+    title: Package manager metadata is stale
+    severity: warn
+    category: tools
+    description: |
+      Package managers cache repository metadata locally. Stale metadata
+      (older than 7 days) means newly published security patches in
+      dependencies will not be discovered or installed when packages are
+      added or upgraded. Refresh metadata regularly to ensure timely
+      access to upstream fixes.
+    remediation: "Run `brew update` (Homebrew) or `sudo apt update` (apt) to refresh package metadata"
+    policy: |
+      findings contains f if {
+        pm := input.package_managers[_]
+        pm.age_days >= 0
+        pm.age_days > 7
+        f := {
+          "rule_id": "TOL003",
+          "evidence": sprintf("%s metadata last refreshed %d days ago (>7)", [pm.name, pm.age_days]),
+        }
+      }
+      skips contains s if {
+        pm := input.package_managers[_]
+        pm.age_days < 0
+        s := {
+          "rule_id": "TOL003",
+          "evidence": sprintf("%s last-update timestamp unavailable", [pm.name]),
+        }
+      }
