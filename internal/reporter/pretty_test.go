@@ -218,6 +218,7 @@ func TestPrettyReporter_SkipShowsReason(t *testing.T) {
 		sr := schema.NewScanResult(results)
 
 		var buf bytes.Buffer
+
 		r := reporter.NewPrettyReporter()
 		err := r.Report(&buf, &sr)
 		require.NoError(t, err)
@@ -241,6 +242,7 @@ func TestPrettyReporter_SkipShowsReason(t *testing.T) {
 		sr := schema.NewScanResult(results)
 
 		var buf bytes.Buffer
+
 		r := reporter.NewPrettyReporter()
 		err := r.Report(&buf, &sr)
 		require.NoError(t, err)
@@ -270,6 +272,7 @@ func TestPrettyReporter_SkipNoFixLine(t *testing.T) {
 	sr := schema.NewScanResult(results)
 
 	var buf bytes.Buffer
+
 	r := reporter.NewPrettyReporter()
 	err := r.Report(&buf, &sr)
 	require.NoError(t, err)
@@ -415,6 +418,7 @@ func TestPrettyReporter_MultilineRemediation(t *testing.T) {
 		sr := schema.NewScanResult(results)
 
 		var buf bytes.Buffer
+
 		r := reporter.NewPrettyReporter()
 		err := r.Report(&buf, &sr)
 		require.NoError(t, err)
@@ -436,6 +440,7 @@ func TestPrettyReporter_MultilineRemediation(t *testing.T) {
 
 	t.Run("single-line remediation unchanged", func(t *testing.T) {
 		var buf bytes.Buffer
+
 		r := reporter.NewPrettyReporter()
 		err := r.Report(&buf, sampleScanResult())
 		require.NoError(t, err)
