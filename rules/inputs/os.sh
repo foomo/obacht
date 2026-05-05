@@ -182,6 +182,17 @@ if [ "$password_lock_delay_seconds" = "-1" ]; then
   fi
 fi
 
+# Time Machine destination connected (mounted on this machine).
+# Without a mounted destination, encryption status from cached metadata may be
+# stale and recent-backup status cannot be evaluated at all. Rego policies use
+# this flag to skip OS032/OS033 rather than emit misleading fail findings.
+timemachine_destination_connected=false
+if [ "$timemachine_enabled" = "true" ]; then
+  if tmutil destinationinfo 2>/dev/null | grep -qi "^Mount Point"; then
+    timemachine_destination_connected=true
+  fi
+fi
+
 # Time Machine destination encryption.
 timemachine_destination_encrypted=true
 if [ "$timemachine_enabled" = "true" ]; then
@@ -245,6 +256,7 @@ cat <<EOF
   "legacy_kexts_blocked": $legacy_kexts_blocked,
   "mdm_enrolled": $mdm,
   "timemachine_enabled": $timemachine_enabled,
+  "timemachine_destination_connected": $timemachine_destination_connected,
   "remote_login_disabled": $remote_login_disabled,
   "remote_management_disabled": $remote_management_disabled,
   "bluetooth_sharing_disabled": $bluetooth_sharing_disabled,
