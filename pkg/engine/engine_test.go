@@ -219,3 +219,69 @@ func TestEvaluate_RegoSkip_MapsToStatusSkip(t *testing.T) {
 	assert.Equal(t, schema.StatusSkip, cr.Status)
 	assert.Equal(t, "disk not connected", cr.Evidence)
 }
+
+var testPolicyFailAndSkip = `package obacht.test
+
+import rego.v1
+
+findings contains f if {
+    input.directory_mode != "0700"
+    f := {"rule_id": "SSH002", "evidence": sprintf("~/.ssh has mode %s", [input.directory_mode])}
+}
+
+skips contains s if {
+    input.directory_mode != "0700"
+    s := {"rule_id": "SSH002", "evidence": "ignored when fail also fires"}
+}
+`
+
+func TestEvaluate_RegoFailWinsOverSkip(t *testing.T) {
+	ruleFiles := []schema.RulesFile{
+		{
+			Input:  `printf '{"directory_mode": "0755"}'`,
+			Policy: testPolicyFailAndSkip,
+			Rules:  testRules,
+		},
+	}
+
+	result, err := engine.Evaluate(t.Context(), ruleFiles)
+	require.NoError(t, err)
+	require.Len(t, result.Results, 1)
+
+	cr := result.Results[0]
+	assert.Equal(t, schema.StatusFail, cr.Status)
+	assert.Equal(t, "~/.ssh has mode 0755", cr.Evidence)
+}
+
+var testPolicyMultiSkip = `package obacht.test
+
+import rego.v1
+
+skips contains s if {
+    input.foo == true
+    s := {"rule_id": "SSH002", "evidence": "alpha"}
+}
+
+skips contains s if {
+    input.bar == true
+    s := {"rule_id": "SSH002", "evidence": "bravo"}
+}
+`
+
+func TestEvaluate_MultipleSkips_AggregateEvidence(t *testing.T) {
+	ruleFiles := []schema.RulesFile{
+		{
+			Input:  `printf '{"foo": true, "bar": true}'`,
+			Policy: testPolicyMultiSkip,
+			Rules:  testRules,
+		},
+	}
+
+	result, err := engine.Evaluate(t.Context(), ruleFiles)
+	require.NoError(t, err)
+	require.Len(t, result.Results, 1)
+
+	cr := result.Results[0]
+	assert.Equal(t, schema.StatusSkip, cr.Status)
+	assert.Equal(t, "alpha; bravo", cr.Evidence)
+}
