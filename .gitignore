@@ -10,9 +10,9 @@ dist/
 tmp/
 
 ## Git
+!.gitkeep
 !.gitignore
 !.gitattributes
-!.gitkeep
 
 ## GitHub
 !.github/

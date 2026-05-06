@@ -413,7 +413,8 @@ sysadminctl -screenLock immediate -password -
 Time Machine backups contain the full contents of the system. An unencrypted backup disk leaks all data if the disk is lost or stolen.
 
 **What it checks:**
-- Whether `tmutil destinationinfo` reports `Encrypted: Yes` for the configured destination
+- Resolves the Time Machine destination mount point from `tmutil destinationinfo`, then runs `diskutil info "<mount-point>"` and looks for `FileVault: Yes` (modern APFS-based Time Machine, Ventura+)
+- Falls back to `Encrypted: Yes` in `tmutil destinationinfo` for legacy HFS+ sparsebundle destinations
 
 **Remediation:**
 
@@ -428,13 +429,13 @@ In Time Machine settings, remove the destination and re-add with **Encrypt Backu
 Stale backups do not protect against ransomware, hardware failure, or accidental deletion. Backups should run within the last 14 days.
 
 **What it checks:**
-- Modification time of the path returned by `tmutil latestbackup`
+- Reads the `LastBackupActivity` key from `/Library/Preferences/com.apple.TimeMachine` via `defaults read`. Value is a `YYYY-MM-DD-HHMMSS` timestamp; the rule fails when the parsed time is older than 14 days
 
 **Remediation:**
 
 Connect the backup destination and let Time Machine complete a backup.
 
-**Note:** This check is skipped when the Time Machine destination is not currently mounted. Backup recency cannot be evaluated without access to the destination volume.
+**Note:** This check is skipped when the Time Machine destination is not currently mounted. Backup recency cannot be evaluated without access to the destination volume. `tmutil latestbackup` is intentionally avoided because it requires Full Disk Access.
 
 ## OS034: AirPlay Receiver is enabled
 

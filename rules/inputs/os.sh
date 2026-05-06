@@ -194,25 +194,47 @@ if [ "$timemachine_enabled" = "true" ]; then
 fi
 
 # Time Machine destination encryption.
+# Modern APFS-based TM (Ventura+) reports encryption via `diskutil info` as
+# `FileVault: Yes`. Legacy HFS+ destinations still report `Encrypted: Yes` in
+# `tmutil destinationinfo`. Try diskutil first, fall back to tmutil.
 timemachine_destination_encrypted=true
-if [ "$timemachine_enabled" = "true" ]; then
-  if ! tmutil destinationinfo 2>/dev/null | grep -qi "Encrypted *: *Yes"; then
-    timemachine_destination_encrypted=false
+if [ "$timemachine_enabled" = "true" ] && [ "$timemachine_destination_connected" = "true" ]; then
+  tm_mount=$(tmutil destinationinfo 2>/dev/null \
+    | awk -F': *' '/^Mount Point/ {sub(/^[[:space:]]+/,"",$2); print $2; exit}')
+  encrypted=false
+  if [ -n "$tm_mount" ]; then
+    if diskutil info "$tm_mount" 2>/dev/null | grep -qE '^[[:space:]]*FileVault:[[:space:]]+Yes'; then
+      encrypted=true
+    fi
   fi
+  if [ "$encrypted" = "false" ]; then
+    if tmutil destinationinfo 2>/dev/null | grep -qiE 'Encrypted[[:space:]]*:[[:space:]]*Yes'; then
+      encrypted=true
+    fi
+  fi
+  [ "$encrypted" = "false" ] && timemachine_destination_encrypted=false
 fi
 
 # Time Machine recent backup (within 14 days).
+# `tmutil latestbackup` requires Full Disk Access. The TimeMachine preferences
+# expose a top-level `LastBackupActivity` key in `YYYY-MM-DD-HHMMSS` format
+# that `defaults read` can access without elevated permissions.
 timemachine_recent_backup=true
-if [ "$timemachine_enabled" = "true" ]; then
-  latest=$(tmutil latestbackup 2>/dev/null || echo "")
-  if [ -z "$latest" ] || [ ! -e "$latest" ]; then
+if [ "$timemachine_enabled" = "true" ] && [ "$timemachine_destination_connected" = "true" ]; then
+  stamp=$(defaults read /Library/Preferences/com.apple.TimeMachine LastBackupActivity 2>/dev/null \
+    | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{6}' | head -1)
+  if [ -z "$stamp" ]; then
     timemachine_recent_backup=false
   else
+    backup_epoch=$(date -j -f "%Y-%m-%d-%H%M%S" "$stamp" +%s 2>/dev/null || echo 0)
     now=$(date +%s)
-    mtime=$(stat -f '%m' "$latest" 2>/dev/null || stat -c '%Y' "$latest" 2>/dev/null || echo 0)
-    age=$((now - mtime))
-    if [ "$age" -gt 1209600 ]; then
+    if [ "$backup_epoch" -le 0 ]; then
       timemachine_recent_backup=false
+    else
+      age=$((now - backup_epoch))
+      if [ "$age" -gt 1209600 ]; then
+        timemachine_recent_backup=false
+      fi
     fi
   fi
 fi

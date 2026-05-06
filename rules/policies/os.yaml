@@ -108,7 +108,7 @@ rules:
       A long screen lock timeout leaves the Mac accessible when
       unattended. The timeout should be 300 seconds (5 minutes)
       or less.
-    remediation: "Set in System Settings > Lock Screen > Require password after screen saver begins"
+    remediation: "Set in System Settings > Wallpaper > Screen saver ... > Start Screen Saver..."
     policy: |
       findings contains f if {
         input.os == "darwin"
