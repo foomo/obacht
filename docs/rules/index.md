@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 62 built-in rules across 11 categories.
+obacht includes 63 built-in rules across 11 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -66,3 +66,4 @@ obacht includes 62 built-in rules across 11 categories.
 | SSH005 | SSH         | SSH key uses weak algorithm                          | high     |
 | TOL001 | Tools       | Security-relevant tool is missing                    | info     |
 | TOL002 | Tools       | Homebrew auto-update is disabled                     | warn     |
+| TOL003 | Tools       | Package manager metadata is stale                    | warn     |

@@ -36,3 +36,23 @@ unset HOMEBREW_NO_AUTO_UPDATE
 
 # Remove from shell profile (~/.bashrc, ~/.zshrc)
 ```
+
+## TOL003: Package manager metadata is stale
+
+**Severity:** warn
+
+Package managers cache repository metadata locally. Stale metadata (older than 7 days) means newly published security patches in dependencies will not be discovered or installed when packages are added or upgraded. Refresh metadata regularly to ensure timely access to upstream fixes.
+
+**What it checks:**
+- Homebrew (`brew`): mtime of `$(brew --cache)/api/formula.jws.json`, `cask.jws.json`, or `$(brew --repository)/.git/FETCH_HEAD`
+- APT (`apt-get`): mtime of `/var/lib/apt/periodic/update-success-stamp` or `/var/cache/apt/pkgcache.bin`
+- Skipped if the package manager is installed but no timestamp source is available (e.g. metadata never refreshed)
+
+**Remediation:**
+```bash
+# Homebrew
+brew update
+
+# APT (Debian/Ubuntu)
+sudo apt update
+```
