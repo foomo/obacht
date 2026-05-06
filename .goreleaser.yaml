@@ -46,7 +46,7 @@ dockers:
     dockerfile: Dockerfile
     image_templates:
       - '{{ if eq .Prerelease "" }}foomo/obacht:latest-amd64{{ end }}'
-      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Version }}-amd64{{ end }}'
+      - 'foomo/obacht:{{ .Version }}-amd64'
       - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}-amd64{{ end }}'
       - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}.{{ .Minor }}-amd64{{ end }}'
     build_flag_templates:
@@ -68,7 +68,7 @@ dockers:
     dockerfile: Dockerfile
     image_templates:
       - '{{ if eq .Prerelease "" }}foomo/obacht:latest-arm64{{ end }}'
-      - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Version }}-arm64{{ end }}'
+      - 'foomo/obacht:{{ .Version }}-arm64'
       - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}-arm64{{ end }}'
       - '{{ if eq .Prerelease "" }}foomo/obacht:{{ .Major }}.{{ .Minor }}-arm64{{ end }}'
     build_flag_templates:
