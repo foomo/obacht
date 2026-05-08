@@ -1,9 +1,12 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"syscall"
 
+	"github.com/charmbracelet/fang"
 	"github.com/spf13/cobra"
 )
 
@@ -11,6 +14,11 @@ var (
 	format   string
 	verbose  bool
 	rulesDir string
+)
+
+var (
+	version    = "dev"
+	commitHash = "none"
 )
 
 var rootCmd = &cobra.Command{
@@ -27,11 +35,6 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		showVersion, _ := cmd.Flags().GetBool("version")
-		if showVersion {
-			return renderVersion(cmd.OutOrStdout(), getVersionInfo(), format)
-		}
-
 		return cmd.Help()
 	},
 }
@@ -40,12 +43,18 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&format, "format", "pretty", "output format (pretty, json)")
 	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "enable verbose output")
 	rootCmd.PersistentFlags().StringVar(&rulesDir, "rules-dir", "", "use rules from this directory instead of embedded rules")
-	rootCmd.Flags().Bool("version", false, "print version information")
 }
 
 // Execute runs the root command and exits with the appropriate code.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := fang.Execute(
+		context.Background(),
+		rootCmd,
+		fang.WithVersion(version),
+		fang.WithCommit(commitHash),
+		fang.WithNotifySignal(os.Interrupt, syscall.SIGTERM),
+	)
+	if err != nil {
 		os.Exit(Error)
 	}
 }

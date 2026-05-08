@@ -174,6 +174,25 @@ func TestPrettyReporter_ContainsSummary(t *testing.T) {
 	assert.Contains(t, out, "1 high")
 }
 
+func TestPrettyReporter_ScannedRulesAndSummaryPositions(t *testing.T) {
+	var buf bytes.Buffer
+
+	r := reporter.NewPrettyReporter()
+	err := r.Report(&buf, sampleScanResult())
+	require.NoError(t, err)
+
+	out := stripANSI(buf.String())
+
+	scannedPos := strings.Index(out, "Scanned rules:")
+	sshPos := strings.Index(out, "SSH\n")
+	summaryPos := strings.Index(out, "Summary:")
+	require.Greater(t, scannedPos, -1, "Scanned rules header should be present")
+	require.Greater(t, sshPos, -1, "SSH category header should be present")
+	require.Greater(t, summaryPos, -1, "Summary line should be present")
+	assert.Less(t, scannedPos, sshPos, "Scanned rules should be above categories")
+	assert.Less(t, sshPos, summaryPos, "Summary should be below categories")
+}
+
 func TestPrettyReporter_ContainsEvidence(t *testing.T) {
 	var buf bytes.Buffer
 

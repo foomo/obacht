@@ -97,14 +97,13 @@ Available Commands:
   explain     Show detailed information about a rule
   help        Help about any command
   scan        Scan the local development environment for security issues
-  version     Print version information
 
 Flags:
       --format string      output format (pretty, json) (default "pretty")
   -h, --help               help for obacht
       --rules-dir string   use rules from this directory instead of embedded rules
       --verbose            enable verbose output
-      --version            print version information
+  -v, --version            version for obacht
 
 Use "obacht [command] --help" for more information about a command.
 ```

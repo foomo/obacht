@@ -38,6 +38,21 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	yellowStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 	boldStyle := lipgloss.NewStyle().Bold(true)
 
+	// Scanned rules header.
+	s := result.Summary
+	critStyle := SeverityColorStyle(schema.SeverityCritical)
+	highStyle := SeverityColorStyle(schema.SeverityHigh)
+	warnStyle := SeverityColorStyle(schema.SeverityWarn)
+	infoStyle := SeverityColorStyle(schema.SeverityInfo)
+	fmt.Fprintf(w, "Scanned rules: %s, %s, %s, %s\n",
+		critStyle.Render(fmt.Sprintf("%d critical", s.Critical)),
+		highStyle.Render(fmt.Sprintf("%d high", s.High)),
+		warnStyle.Render(fmt.Sprintf("%d warn", s.Warn)),
+		infoStyle.Render(fmt.Sprintf("%d info", s.Info)),
+	)
+	fmt.Fprintln(w, strings.Repeat("-", 60))
+	fmt.Fprintln(w)
+
 	// Group results by category.
 	groups := make(map[string][]schema.CheckResult)
 
@@ -158,21 +173,14 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 		fmt.Fprintln(w)
 	}
 
-	// Separator.
+	// Summary footer.
 	fmt.Fprintln(w, strings.Repeat("-", 60))
 
-	// Summary line.
-	s := result.Summary
-	critStyle := SeverityColorStyle(schema.SeverityCritical)
-	highStyle := SeverityColorStyle(schema.SeverityHigh)
-	warnStyle := SeverityColorStyle(schema.SeverityWarn)
-	infoStyle := SeverityColorStyle(schema.SeverityInfo)
-	fmt.Fprintf(w, "Summary: %d failed, %d passed, %d skipped (%s, %s, %s, %s)\n",
-		s.Failed, s.Passed, s.Skipped,
-		critStyle.Render(fmt.Sprintf("%d critical", s.Critical)),
-		highStyle.Render(fmt.Sprintf("%d high", s.High)),
-		warnStyle.Render(fmt.Sprintf("%d warn", s.Warn)),
-		infoStyle.Render(fmt.Sprintf("%d info", s.Info)),
+	failStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true)
+	fmt.Fprintf(w, "Summary: %s, %s, %s\n",
+		failStyle.Render(fmt.Sprintf("%d failed", s.Failed)),
+		greenStyle.Render(fmt.Sprintf("%d passed", s.Passed)),
+		yellowStyle.Render(fmt.Sprintf("%d skipped", s.Skipped)),
 	)
 
 	return nil
