@@ -414,6 +414,7 @@ Time Machine backups contain the full contents of the system. An unencrypted bac
 
 **What it checks:**
 - Resolves the Time Machine destination mount point from `tmutil destinationinfo`, then runs `diskutil info "<mount-point>"` and looks for `FileVault: Yes` (modern APFS-based Time Machine, Ventura+)
+- Also accepts `Encrypted: Yes` from `diskutil info` for legacy CoreStorage-backed HFS+ destinations (Apple_HFSX)
 - Falls back to `Encrypted: Yes` in `tmutil destinationinfo` for legacy HFS+ sparsebundle destinations
 
 **Remediation:**

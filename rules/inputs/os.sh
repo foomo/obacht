@@ -195,15 +195,20 @@ fi
 
 # Time Machine destination encryption.
 # Modern APFS-based TM (Ventura+) reports encryption via `diskutil info` as
-# `FileVault: Yes`. Legacy HFS+ destinations still report `Encrypted: Yes` in
-# `tmutil destinationinfo`. Try diskutil first, fall back to tmutil.
+# `FileVault: Yes`. Legacy CoreStorage-backed HFS+ destinations report
+# `Encrypted: Yes` in `diskutil info` (CoreStorage Logical Volume). Legacy
+# sparsebundle destinations report `Encrypted: Yes` only in
+# `tmutil destinationinfo`. Try diskutil first (both keys), fall back to tmutil.
 timemachine_destination_encrypted=true
 if [ "$timemachine_enabled" = "true" ] && [ "$timemachine_destination_connected" = "true" ]; then
   tm_mount=$(tmutil destinationinfo 2>/dev/null \
     | awk -F': *' '/^Mount Point/ {sub(/^[[:space:]]+/,"",$2); print $2; exit}')
   encrypted=false
   if [ -n "$tm_mount" ]; then
-    if diskutil info "$tm_mount" 2>/dev/null | grep -qE '^[[:space:]]*FileVault:[[:space:]]+Yes'; then
+    diskutil_info=$(diskutil info "$tm_mount" 2>/dev/null)
+    if printf '%s\n' "$diskutil_info" | grep -qE '^[[:space:]]*FileVault:[[:space:]]+Yes'; then
+      encrypted=true
+    elif printf '%s\n' "$diskutil_info" | grep -qE '^[[:space:]]*Encrypted:[[:space:]]+Yes'; then
       encrypted=true
     fi
   fi
