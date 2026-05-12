@@ -2,7 +2,7 @@
 tools="["
 first=true
 
-for tool in git opa gpg ssh-agent; do
+for tool in git ssh-agent; do
   installed=false
   version=""
   path=""
@@ -13,8 +13,6 @@ for tool in git opa gpg ssh-agent; do
     path="$tool_path"
     case "$tool" in
       git)       version=$(git --version 2>/dev/null | head -1) ;;
-      opa)       version=$(opa version 2>/dev/null | head -1) ;;
-      gpg)       version=$(gpg --version 2>/dev/null | head -1) ;;
       ssh-agent) version=$(ssh-agent -V 2>&1 | head -1) ;;
     esac
   fi
