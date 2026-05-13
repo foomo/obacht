@@ -9,16 +9,6 @@ rules:
       Standard permissions like 0755 are accepted; only directories
       with the others-write bit set (e.g., 0777) are flagged.
     remediation: "Remove the world-writable directory from PATH or tighten its permissions (e.g., chmod 0755)"
-    policy: |
-      findings contains f if {
-        dir := input.dirs[_]
-        dir.exists
-        dir.world_writable
-        f := {
-          "rule_id": "PTH001",
-          "evidence": sprintf("World-writable directory in PATH: %s (mode %s)", [dir.path, dir.mode]),
-        }
-      }
   - id: PTH002
     title: Relative path entry in PATH
     severity: warn
@@ -29,12 +19,3 @@ rules:
       exploit this by placing malicious executables in commonly
       visited directories.
     remediation: "Remove relative paths from PATH and use absolute paths instead"
-    policy: |
-      findings contains f if {
-        dir := input.dirs[_]
-        dir.is_relative
-        f := {
-          "rule_id": "PTH002",
-          "evidence": sprintf("Relative path in PATH: %s", [dir.path]),
-        }
-      }

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -18,6 +19,22 @@ import (
 	"github.com/foomo/obacht/pkg/schema"
 	"github.com/foomo/obacht/rules"
 )
+
+// ruleIDPattern matches the conventional rule-ID format: uppercase prefix +
+// digits (e.g. SSH005, OS030, PTH001). Used to reject any rule.ID that could
+// be used for path traversal when looking up per-rule input/policy files.
+var ruleIDPattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]*[0-9]+$`)
+
+// validateRuleID returns an error if id does not match the conventional
+// PREFIX### pattern. Used to gate filesystem lookups whose path depends
+// on the rule ID.
+func validateRuleID(id string) error {
+	if !ruleIDPattern.MatchString(id) {
+		return fmt.Errorf("invalid rule ID %q: must match %s", id, ruleIDPattern.String())
+	}
+
+	return nil
+}
 
 var (
 	category    string
@@ -265,18 +282,24 @@ func runScan(cmd *cobra.Command, args []string) error {
 		err       error
 	)
 
+	var rulesFS fs.FS
+
 	if rulesDir != "" {
 		ruleFiles, err = loadExternalRuleFiles(rulesDir)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "loading external rules: %v\n", err)
 			os.Exit(Error)
 		}
+
+		rulesFS = os.DirFS(rulesDir)
 	} else {
 		ruleFiles, err = loadEmbeddedRuleFiles()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "loading embedded rules: %v\n", err)
 			os.Exit(Error)
 		}
+
+		rulesFS = rules.Embedded
 	}
 
 	// Parse rule ID filters.
@@ -318,7 +341,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	if format == "pretty" {
 		// Run scan with animated progress display.
-		model := newScanModel(ctx, ruleFiles)
+		model := newScanModel(ctx, rulesFS, ruleFiles)
 		p := tea.NewProgram(model, tea.WithOutput(os.Stderr), tea.WithInput(os.Stdin))
 		model.SetProgram(p)
 
@@ -338,7 +361,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 	} else {
 		var err error
 
-		scanResult, err = engine.Evaluate(ctx, ruleFiles)
+		scanResult, err = engine.EvaluateWithFS(ctx, rulesFS, ruleFiles)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "evaluating policies: %v\n", err)
 			os.Exit(Error)
@@ -360,11 +383,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// loadEmbeddedRuleFiles reads all YAML rule files from the embedded filesystem.
+// loadEmbeddedRuleFiles reads all YAML rule files from the embedded filesystem
+// and resolves per-rule input/policy files where not set inline.
 func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 	var ruleFiles []schema.RulesFile
 
-	err := fs.WalkDir(rules.Embedded, ".", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(rules.Embedded, "policies", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -383,16 +407,43 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 			return fmt.Errorf("parsing %s: %w", path, err)
 		}
 
-		// Resolve input from inputs/<name>.sh if not set inline.
-		if rf.Input == "" {
-			baseName := strings.TrimSuffix(filepath.Base(path), ".yaml")
+		baseName := strings.TrimSuffix(filepath.Base(path), ".yaml")
 
-			input, err := resolveInputFromFS(rules.Embedded, "inputs", baseName)
+		// File-level input fallback: inputs/<cat>.sh (legacy, kept during migration).
+		if rf.Input == "" {
+			legacy, err := resolveInputFromFS(rules.Embedded, "inputs", baseName)
 			if err != nil {
-				return fmt.Errorf("resolving input for %s: %w", path, err)
+				return fmt.Errorf("resolving file-level input for %s: %w", path, err)
 			}
 
-			rf.Input = input
+			rf.Input = legacy
+		}
+
+		// Per-rule resolution.
+		for i := range rf.Rules {
+			rule := &rf.Rules[i]
+
+			if err := validateRuleID(rule.ID); err != nil {
+				return fmt.Errorf("in %s: %w", path, err)
+			}
+
+			if rule.Input == "" {
+				perRule, err := resolveInputFromFS(rules.Embedded, "inputs/"+baseName, rule.ID)
+				if err != nil {
+					return fmt.Errorf("resolving input for rule %s: %w", rule.ID, err)
+				}
+
+				rule.Input = perRule
+			}
+
+			if rule.Policy == "" {
+				perRule, err := resolveRegoFromFS(rules.Embedded, "policy/"+baseName, rule.ID)
+				if err != nil {
+					return fmt.Errorf("resolving policy for rule %s: %w", rule.ID, err)
+				}
+
+				rule.Policy = perRule
+			}
 		}
 
 		ruleFiles = append(ruleFiles, rf)
@@ -433,16 +484,47 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 			return nil, fmt.Errorf("parsing %s: %w", path, err)
 		}
 
+		baseName := strings.TrimSuffix(entry.Name(), ".yaml")
+
 		// Resolve input from inputs/<name>.sh if not set inline.
 		if rf.Input == "" {
-			baseName := strings.TrimSuffix(entry.Name(), ".yaml")
-
 			input, err := resolveInputFromDir(dir, baseName)
 			if err != nil {
 				return nil, fmt.Errorf("resolving input for %s: %w", path, err)
 			}
 
 			rf.Input = input
+		}
+
+		// Per-rule resolution from inputs/<cat>/<RULEID>.sh and policy/<cat>/<RULEID>.rego.
+		for i := range rf.Rules {
+			rule := &rf.Rules[i]
+
+			if err := validateRuleID(rule.ID); err != nil {
+				return nil, fmt.Errorf("in %s: %w", path, err)
+			}
+
+			if rule.Input == "" {
+				scriptPath := filepath.Join(dir, "inputs", baseName, rule.ID+".sh")
+
+				data, err := os.ReadFile(scriptPath)
+				if err == nil {
+					rule.Input = string(data)
+				} else if !errors.Is(err, os.ErrNotExist) {
+					return nil, fmt.Errorf("reading per-rule input %s: %w", scriptPath, err)
+				}
+			}
+
+			if rule.Policy == "" {
+				regoPath := filepath.Join(dir, "policy", baseName, rule.ID+".rego")
+
+				data, err := os.ReadFile(regoPath)
+				if err == nil {
+					rule.Policy = string(data)
+				} else if !errors.Is(err, os.ErrNotExist) {
+					return nil, fmt.Errorf("reading per-rule rego %s: %w", regoPath, err)
+				}
+			}
 		}
 
 		// Resolve policy file references.
@@ -485,6 +567,23 @@ func resolveInputFromFS(fsys fs.FS, inputsDir, baseName string) (string, error) 
 	scriptPath := inputsDir + "/" + baseName + ".sh"
 
 	data, err := fs.ReadFile(fsys, scriptPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", nil
+		}
+
+		return "", err
+	}
+
+	return string(data), nil
+}
+
+// resolveRegoFromFS checks for <dir>/<RULEID>.rego in fsys and returns its
+// content if found. Returns empty string if not found.
+func resolveRegoFromFS(fsys fs.FS, dir, ruleID string) (string, error) {
+	path := dir + "/" + ruleID + ".rego"
+
+	data, err := fs.ReadFile(fsys, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return "", nil

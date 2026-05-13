@@ -5,11 +5,12 @@ package cli
 import "context"
 
 var (
-	ParseRuleIDs         = parseRuleIDs
-	CollectRuleIDs       = collectRuleIDs
-	ValidateRuleIDs      = validateRuleIDs
-	FilterRuleFilesByID  = filterRuleFilesByID
-	ExcludeRuleFilesByID = excludeRuleFilesByID
+	ParseRuleIDs          = parseRuleIDs
+	CollectRuleIDs        = collectRuleIDs
+	ValidateRuleIDs       = validateRuleIDs
+	FilterRuleFilesByID   = filterRuleFilesByID
+	ExcludeRuleFilesByID  = excludeRuleFilesByID
+	LoadExternalRuleFiles = loadExternalRuleFiles
 )
 
 // SetVersionForTest swaps the package-level version variable and returns the
@@ -24,7 +25,7 @@ func SetVersionForTest(v string) string {
 // RenderHeroForTest renders the scan model view with no rules so tests can
 // assert hero/tagline/version output without standing up a full bubbletea run.
 func RenderHeroForTest() string {
-	m := newScanModel(context.Background(), nil)
+	m := newScanModel(context.Background(), nil, nil)
 
 	return m.View().Content
 }
