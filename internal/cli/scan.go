@@ -409,16 +409,6 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 
 		baseName := strings.TrimSuffix(filepath.Base(path), ".yaml")
 
-		// File-level input fallback: inputs/<cat>.sh (legacy, kept during migration).
-		if rf.Input == "" {
-			legacy, err := resolveInputFromFS(rules.Embedded, "inputs", baseName)
-			if err != nil {
-				return fmt.Errorf("resolving file-level input for %s: %w", path, err)
-			}
-
-			rf.Input = legacy
-		}
-
 		// Per-rule resolution.
 		for i := range rf.Rules {
 			rule := &rf.Rules[i]
@@ -485,16 +475,6 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 		}
 
 		baseName := strings.TrimSuffix(entry.Name(), ".yaml")
-
-		// Resolve input from inputs/<name>.sh if not set inline.
-		if rf.Input == "" {
-			input, err := resolveInputFromDir(dir, baseName)
-			if err != nil {
-				return nil, fmt.Errorf("resolving input for %s: %w", path, err)
-			}
-
-			rf.Input = input
-		}
 
 		// Per-rule resolution from inputs/<cat>/<RULEID>.sh and policy/<cat>/<RULEID>.rego.
 		for i := range rf.Rules {
@@ -586,22 +566,6 @@ func resolveRegoFromFS(fsys fs.FS, dir, ruleID string) (string, error) {
 	data, err := fs.ReadFile(fsys, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return "", nil
-		}
-
-		return "", err
-	}
-
-	return string(data), nil
-}
-
-// resolveInputFromDir checks for <dir>/inputs/<name>.sh on the real filesystem.
-func resolveInputFromDir(dir, baseName string) (string, error) {
-	scriptPath := filepath.Join(dir, "inputs", baseName+".sh")
-
-	data, err := os.ReadFile(scriptPath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
 			return "", nil
 		}
 

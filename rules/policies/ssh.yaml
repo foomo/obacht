@@ -8,15 +8,6 @@ rules:
       Keys with permissions wider than 0600 can be read by
       other users on the system.
     remediation: "Run: chmod 600 ~/.ssh/id_*"
-    policy: |
-      findings contains f if {
-        key := input.keys[_]
-        key.mode != "0600"
-        f := {
-          "rule_id": "SSH001",
-          "evidence": sprintf("Key %s has mode %s (expected 0600)", [key.path, key.mode]),
-        }
-      }
   - id: SSH002
     title: SSH directory has weak permissions
     severity: high
@@ -26,15 +17,6 @@ rules:
       Permissions wider than 0700 may allow other users to read
       or modify SSH configuration and keys.
     remediation: "Run: chmod 700 ~/.ssh"
-    policy: |
-      findings contains f if {
-        input.directory_exists
-        input.directory_mode != "0700"
-        f := {
-          "rule_id": "SSH002",
-          "evidence": sprintf("~/.ssh has mode %s (expected 0700)", [input.directory_mode]),
-        }
-      }
   - id: SSH003
     title: SSH StrictHostKeyChecking is disabled
     severity: high
@@ -44,15 +26,6 @@ rules:
       host key verification, making connections vulnerable to
       man-in-the-middle attacks.
     remediation: "Remove or change 'StrictHostKeyChecking no' in ~/.ssh/config"
-    policy: |
-      findings contains f if {
-        input.config_exists
-        input.strict_host_key_checking_disabled
-        f := {
-          "rule_id": "SSH003",
-          "evidence": "SSH config has StrictHostKeyChecking set to 'no'",
-        }
-      }
   - id: SSH004
     title: SSH agent forwarding is enabled globally
     severity: warn
@@ -63,15 +36,6 @@ rules:
       use your forwarded keys to access other systems. Only enable
       agent forwarding for specific trusted hosts.
     remediation: "Remove 'ForwardAgent yes' from Host * section in ~/.ssh/config and add it only to specific trusted hosts"
-    policy: |
-      findings contains f if {
-        input.config_exists
-        input.forward_agent_global
-        f := {
-          "rule_id": "SSH004",
-          "evidence": "SSH agent forwarding is enabled globally (Host *)",
-        }
-      }
   - id: SSH005
     title: SSH key uses weak algorithm
     severity: high
@@ -81,30 +45,3 @@ rules:
       3072 bits are below current NIST guidance. Stolen ciphertext
       now can be decrypted later as factoring improves.
     remediation: "Generate a stronger key: ssh-keygen -t ed25519 -a 100. Add the new public key to remote hosts and remove the weak key."
-    policy: |
-      findings contains f if {
-        key := input.keys[_]
-        key.algorithm == "DSA"
-        f := {
-          "rule_id": "SSH005",
-          "evidence": sprintf("SSH key %s uses weak algorithm: DSA/%d bits", [key.path, key.bits]),
-        }
-      }
-      findings contains f if {
-        key := input.keys[_]
-        key.algorithm == "RSA"
-        key.bits > 0
-        key.bits < 3072
-        f := {
-          "rule_id": "SSH005",
-          "evidence": sprintf("SSH key %s uses weak algorithm: RSA/%d bits (minimum 3072)", [key.path, key.bits]),
-        }
-      }
-      skips contains s if {
-        key := input.keys[_]
-        key.bits == 0
-        s := {
-          "rule_id": "SSH005",
-          "evidence": sprintf("Could not read SSH key bits: %s (ssh-keygen failed)", [key.path]),
-        }
-      }

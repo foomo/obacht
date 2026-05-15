@@ -9,14 +9,6 @@ rules:
       cybersecurity practice. No recognized password manager was
       found in /Applications.
     remediation: "Install a password manager such as 1Password, Bitwarden, or KeePassXC"
-    policy: |
-      findings contains f if {
-        not input.password_manager_installed
-        f := {
-          "rule_id": "PRV001",
-          "evidence": "No password manager application detected in /Applications",
-        }
-      }
   - id: PRV002
     title: No VPN configuration detected
     severity: info
@@ -26,14 +18,6 @@ rules:
       eavesdropping on untrusted networks. No macOS VPN
       configuration or common VPN process was found.
     remediation: "Configure a VPN in System Settings > Network > VPN or install a VPN application"
-    policy: |
-      findings contains f if {
-        not input.vpn_configured
-        f := {
-          "rule_id": "PRV002",
-          "evidence": "No VPN configuration or VPN process detected",
-        }
-      }
   - id: PRV003
     title: Encrypted DNS is not configured
     severity: warn
@@ -43,14 +27,6 @@ rules:
       network observers from seeing which domains you visit. No
       encrypted DNS configuration was detected.
     remediation: "Configure encrypted DNS via System Settings > Network > DNS, or install dnscrypt-proxy or cloudflared"
-    policy: |
-      findings contains f if {
-        not input.encrypted_dns
-        f := {
-          "rule_id": "PRV003",
-          "evidence": "No encrypted DNS (DoH/DoT) configuration detected",
-        }
-      }
   - id: PRV004
     title: Untrusted DNS resolver is configured
     severity: warn
@@ -69,20 +45,3 @@ rules:
         Google:     8.8.8.8, 8.8.4.4
         AdGuard:    94.140.14.14, 94.140.15.15
         Mullvad:    194.242.2.2
-    policy: |
-      findings contains f if {
-        not input.trusted_dns
-        count(input.dns_servers) > 0
-        f := {
-          "rule_id": "PRV004",
-          "evidence": sprintf("Untrusted DNS resolver(s): %s", [input.untrusted_dns_servers]),
-        }
-      }
-      findings contains f if {
-        not input.trusted_dns
-        count(input.dns_servers) == 0
-        f := {
-          "rule_id": "PRV004",
-          "evidence": "No DNS resolvers detected via scutil --dns",
-        }
-      }
