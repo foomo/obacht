@@ -1,7 +1,7 @@
 # obacht README demo recording.
 #
 # Regenerate:
-#   make build && vhs demo.tape
+#   make demo
 #
 # Requires: mise install (vhs 0.11.0), ttyd, ffmpeg.
 # The demo runs against a curated fixture rule set in demo/ so the

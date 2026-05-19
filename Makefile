@@ -172,6 +172,14 @@ godocs:
 	@echo "〉starting go docs"
 	@go doc -http
 
+### Demo
+
+.PHONY: demo
+## Record README demo gif via vhs
+demo: build
+	@echo "〉vhs docs/public/demo.tape"
+	@vhs docs/public/demo.tape
+
 ### Utils
 
 .PHONY: help
