@@ -56,3 +56,37 @@ brew update
 # APT (Debian/Ubuntu)
 sudo apt update
 ```
+
+## TOL004: Homebrew analytics is not disabled
+
+**Severity:** warn
+
+Homebrew collects anonymized analytics by default, including installed formulae, OS version, and CPU architecture. Setting `HOMEBREW_NO_ANALYTICS=1` opts out of this telemetry collection. Skipped if `brew` is not installed.
+
+**What it checks:**
+- Whether `brew` is on `PATH`
+- Whether the `HOMEBREW_NO_ANALYTICS` environment variable is set to `1`
+
+**Remediation:**
+```bash
+# Add to ~/.zshrc, ~/.bashrc, or equivalent shell profile
+export HOMEBREW_NO_ANALYTICS=1
+
+# Or persist via brew itself
+brew analytics off
+```
+
+## TOL005: Go telemetry is not disabled
+
+**Severity:** warn
+
+The Go toolchain (1.23+) collects local telemetry counters by default (mode `local`), and can optionally upload them to the Go team (mode `on`). Setting telemetry mode to `off` disables all collection and upload. Skipped if `go` is not installed.
+
+**What it checks:**
+- Whether `go` is on `PATH`
+- Whether `go env GOTELEMETRY` returns `off`
+
+**Remediation:**
+```bash
+go telemetry off
+```

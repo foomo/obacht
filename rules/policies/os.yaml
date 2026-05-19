@@ -291,3 +291,12 @@ rules:
       Apple supplies security patches only for the current and previous
       two major macOS versions. Older versions accumulate unpatched CVEs.
     remediation: "Upgrade to a current macOS version (Ventura 13 or newer)"
+  - id: OS037
+    title: App Store in-app review prompts are enabled
+    severity: info
+    category: os
+    description: |
+      The App Store can prompt users for app reviews via the
+      InAppReviewEnabled preference. Disabling it suppresses these
+      prompts and reduces unsolicited UI interruptions.
+    remediation: "Run: defaults write com.apple.appstore InAppReviewEnabled -bool false"

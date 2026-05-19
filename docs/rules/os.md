@@ -477,3 +477,17 @@ Apple supplies security patches only for the current and previous two major macO
 **Remediation:**
 
 Upgrade to a current macOS version (Ventura 13 or newer).
+
+## OS037: App Store in-app review prompts are enabled
+
+**Severity:** info
+
+The App Store can prompt users for app reviews via the `InAppReviewEnabled` preference. Disabling it suppresses these prompts and reduces unsolicited UI interruptions.
+
+**What it checks:**
+- Whether `com.apple.appstore InAppReviewEnabled` is `0`
+
+**Remediation:**
+```bash
+defaults write com.apple.appstore InAppReviewEnabled -bool false
+```

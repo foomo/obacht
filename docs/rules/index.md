@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 63 built-in rules across 11 categories.
+obacht includes 67 built-in rules across 11 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -52,12 +52,14 @@ obacht includes 63 built-in rules across 11 categories.
 | OS034  | OS          | AirPlay Receiver is enabled                          | warn     |
 | OS035  | OS          | Automatic download of OS updates is disabled         | warn     |
 | OS036  | OS          | macOS major version is unsupported                   | warn     |
+| OS037  | OS          | App Store in-app review prompts are enabled          | info     |
 | PTH001 | PATH        | World-writable directory in PATH                     | high     |
 | PTH002 | PATH        | Relative path entry in PATH                          | warn     |
 | PRV001 | Privacy     | No password manager application detected             | warn     |
 | PRV002 | Privacy     | No VPN configuration detected                        | info     |
 | PRV003 | Privacy     | Encrypted DNS is not configured                      | warn     |
 | PRV004 | Privacy     | Untrusted DNS resolver is configured                 | warn     |
+| PRV005 | Privacy     | DO_NOT_TRACK env var is not set                      | info     |
 | SHL001 | Shell       | Shell history file has weak permissions              | warn     |
 | SSH001 | SSH         | SSH private key has weak permissions                 | high     |
 | SSH002 | SSH         | SSH directory has weak permissions                   | high     |
@@ -67,3 +69,5 @@ obacht includes 63 built-in rules across 11 categories.
 | TOL001 | Tools       | Security-relevant tool is missing                    | info     |
 | TOL002 | Tools       | Homebrew auto-update is disabled                     | warn     |
 | TOL003 | Tools       | Package manager metadata is stale                    | warn     |
+| TOL004 | Tools       | Homebrew analytics is not disabled                   | warn     |
+| TOL005 | Tools       | Go telemetry is not disabled                         | warn     |

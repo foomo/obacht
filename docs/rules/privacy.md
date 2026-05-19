@@ -80,3 +80,18 @@ ISP- or router-provided DNS resolvers can log and monetize browsing activity, an
 **Remediation:**
 
 System Settings > Network > Wi-Fi/Ethernet > Details > DNS — set primary/secondary to one of the IPs above. For DoH/DoT (also satisfies PRV003), install a config profile (e.g. https://one.one.one.one/dns/) or run `dnscrypt-proxy` locally and point DNS to `127.0.0.1`.
+
+## PRV005: DO_NOT_TRACK env var is not set
+
+**Severity:** info
+
+The [`DO_NOT_TRACK`](https://donottrack.sh) environment variable is a community convention that signals to participating CLIs and applications that the user opts out of telemetry collection. When unset or not set to `1`, tools may collect usage analytics without explicit consent.
+
+**What it checks:**
+- Whether the `DO_NOT_TRACK` environment variable is set to `1`
+
+**Remediation:**
+```bash
+# Add to ~/.zshrc, ~/.bashrc, or equivalent shell profile
+export DO_NOT_TRACK=1
+```
