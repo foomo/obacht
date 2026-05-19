@@ -45,3 +45,13 @@ rules:
         Google:     8.8.8.8, 8.8.4.4
         AdGuard:    94.140.14.14, 94.140.15.15
         Mullvad:    194.242.2.2
+  - id: PRV005
+    title: DO_NOT_TRACK env var is not set
+    severity: info
+    category: privacy
+    description: |
+      The DO_NOT_TRACK environment variable (https://donottrack.sh)
+      signals to participating CLIs and applications that the user
+      opts out of telemetry collection. When unset or not set to "1",
+      tools may collect usage analytics without explicit consent.
+    remediation: 'Export DO_NOT_TRACK=1 in your shell profile (e.g. ~/.zshrc or ~/.bashrc)'

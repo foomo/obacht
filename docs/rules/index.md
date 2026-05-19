@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 64 built-in rules across 11 categories.
+obacht includes 65 built-in rules across 11 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -59,6 +59,7 @@ obacht includes 64 built-in rules across 11 categories.
 | PRV002 | Privacy     | No VPN configuration detected                        | info     |
 | PRV003 | Privacy     | Encrypted DNS is not configured                      | warn     |
 | PRV004 | Privacy     | Untrusted DNS resolver is configured                 | warn     |
+| PRV005 | Privacy     | DO_NOT_TRACK env var is not set                      | info     |
 | SHL001 | Shell       | Shell history file has weak permissions              | warn     |
 | SSH001 | SSH         | SSH private key has weak permissions                 | high     |
 | SSH002 | SSH         | SSH directory has weak permissions                   | high     |
