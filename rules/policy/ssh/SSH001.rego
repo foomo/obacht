@@ -3,7 +3,7 @@ package obacht.ssh
 import rego.v1
 
 findings contains f if {
-	key := input.keys[_]
+	some key in input.keys
 	key.mode != "0600"
 	f := {
 		"rule_id": "SSH001",

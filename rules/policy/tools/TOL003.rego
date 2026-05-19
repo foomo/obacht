@@ -3,7 +3,7 @@ package obacht.tools
 import rego.v1
 
 findings contains f if {
-	pm := input.package_managers[_]
+	some pm in input.package_managers
 	pm.age_days >= 0
 	pm.age_days > 7
 	f := {
@@ -13,7 +13,7 @@ findings contains f if {
 }
 
 skips contains s if {
-	pm := input.package_managers[_]
+	some pm in input.package_managers
 	pm.age_days < 0
 	s := {
 		"rule_id": "TOL003",

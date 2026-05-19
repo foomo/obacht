@@ -10,9 +10,10 @@ if [ "$os" != "darwin" ]; then
   exit 0
 fi
 
-# Preserve legacy semantics: defaults read success => enabled reported true.
+# Rapid Security Response is enabled when the ConfigDataInstall key is set to 1.
 rsr_enabled=false
-if defaults read /Library/Preferences/com.apple.SoftwareUpdate ConfigDataInstall >/dev/null 2>&1; then
+value=$(defaults read /Library/Preferences/com.apple.SoftwareUpdate ConfigDataInstall 2>/dev/null)
+if [ "$value" = "1" ]; then
   rsr_enabled=true
 fi
 

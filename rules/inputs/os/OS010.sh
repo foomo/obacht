@@ -10,9 +10,10 @@ if [ "$os" != "darwin" ]; then
   exit 0
 fi
 
-# Preserve legacy semantics: defaults read success => enabled reported true.
+# Enabled when the AutoUpdate key is set to 1.
 app_auto_update_enabled=false
-if defaults read /Library/Preferences/com.apple.commerce AutoUpdate >/dev/null 2>&1; then
+value=$(defaults read /Library/Preferences/com.apple.commerce AutoUpdate 2>/dev/null)
+if [ "$value" = "1" ]; then
   app_auto_update_enabled=true
 fi
 

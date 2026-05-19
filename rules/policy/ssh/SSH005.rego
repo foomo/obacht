@@ -3,7 +3,7 @@ package obacht.ssh
 import rego.v1
 
 findings contains f if {
-	key := input.keys[_]
+	some key in input.keys
 	key.algorithm == "DSA"
 	f := {
 		"rule_id": "SSH005",
@@ -12,7 +12,7 @@ findings contains f if {
 }
 
 findings contains f if {
-	key := input.keys[_]
+	some key in input.keys
 	key.algorithm == "RSA"
 	key.bits > 0
 	key.bits < 3072
@@ -23,7 +23,7 @@ findings contains f if {
 }
 
 skips contains s if {
-	key := input.keys[_]
+	some key in input.keys
 	key.bits == 0
 	s := {
 		"rule_id": "SSH005",

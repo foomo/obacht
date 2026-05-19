@@ -3,7 +3,7 @@ package obacht.tools
 import rego.v1
 
 findings contains f if {
-	tool := input.tools[_]
+	some tool in input.tools
 	not tool.installed
 	f := {
 		"rule_id": "TOL001",

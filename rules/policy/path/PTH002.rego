@@ -3,7 +3,7 @@ package obacht.path
 import rego.v1
 
 findings contains f if {
-	dir := input.dirs[_]
+	some dir in input.dirs
 	dir.is_relative
 	f := {
 		"rule_id": "PTH002",

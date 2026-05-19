@@ -82,7 +82,7 @@ rules:
     description: |
       Automatic App Store updates keep applications patched against
       known vulnerabilities.
-    remediation: "Enable in System Settings > General > Software Update > Automatic Updates"
+    remediation: "Enable in App Store > Settings > Automatic Updates"
   - id: OS011
     title: Rapid Security Responses are disabled
     severity: high

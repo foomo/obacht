@@ -10,10 +10,11 @@ if [ "$os" != "darwin" ]; then
   exit 0
 fi
 
-# Preserve legacy semantics: cupsctl success => disabled reported true.
-printer_sharing_disabled=false
-if cupsctl >/dev/null 2>&1; then
-  printer_sharing_disabled=true
+# Printer sharing is disabled when cupsctl reports _share_printers=0.
+# If cupsctl fails (CUPS not running), treat as disabled.
+printer_sharing_disabled=true
+if cupsctl 2>/dev/null | grep -q '^_share_printers=1'; then
+  printer_sharing_disabled=false
 fi
 
 jq -cn --arg os "$os" --argjson e "$printer_sharing_disabled" '{os: $os, printer_sharing_disabled: $e}' | emit_ok OS015
