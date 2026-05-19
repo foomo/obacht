@@ -38,3 +38,13 @@ rules:
       installed formulae, OS version, and CPU architecture. Setting
       HOMEBREW_NO_ANALYTICS=1 opts out of this telemetry collection.
     remediation: 'Export HOMEBREW_NO_ANALYTICS=1 in your shell profile, or run `brew analytics off`'
+  - id: TOL005
+    title: Go telemetry is not disabled
+    severity: warn
+    category: tools
+    description: |
+      The Go toolchain (1.23+) collects local telemetry counters by
+      default (mode "local"), and can optionally upload them to the Go
+      team (mode "on"). Setting telemetry mode to "off" disables all
+      collection and upload.
+    remediation: 'Run `go telemetry off` to disable telemetry collection'
