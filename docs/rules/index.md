@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 65 built-in rules across 11 categories.
+obacht includes 66 built-in rules across 11 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -69,3 +69,4 @@ obacht includes 65 built-in rules across 11 categories.
 | TOL001 | Tools       | Security-relevant tool is missing                    | info     |
 | TOL002 | Tools       | Homebrew auto-update is disabled                     | warn     |
 | TOL003 | Tools       | Package manager metadata is stale                    | warn     |
+| TOL004 | Tools       | Homebrew analytics is not disabled                   | warn     |
