@@ -7,14 +7,6 @@ rules:
       A world-writable Docker socket lets any local user gain root on the
       host by spawning a privileged container.
     remediation: "Run: sudo chmod 660 /var/run/docker.sock"
-    policy: |
-      findings contains f if {
-        input.docker_socket.world_writable
-        f := {
-          "rule_id": "DEMO001",
-          "evidence": sprintf("%s has mode %s (world-writable)", [input.docker_socket.path, input.docker_socket.mode]),
-        }
-      }
 
   - id: DEMO002
     title: SSH key uses weak algorithm
@@ -23,16 +15,6 @@ rules:
     description: |
       RSA keys under 3072 bits are below current NIST guidance.
     remediation: "Generate a stronger key: ssh-keygen -t ed25519 -a 100"
-    policy: |
-      findings contains f if {
-        key := input.ssh_keys[_]
-        key.algorithm == "RSA"
-        key.bits < 3072
-        f := {
-          "rule_id": "DEMO002",
-          "evidence": sprintf("SSH key %s uses RSA/%d bits (minimum 3072)", [key.path, key.bits]),
-        }
-      }
 
   - id: DEMO003
     title: SSH private key has weak permissions
@@ -41,15 +23,6 @@ rules:
     description: |
       SSH private keys should be readable only by the owner.
     remediation: "Run: chmod 600 ~/.ssh/id_*"
-    policy: |
-      findings contains f if {
-        key := input.ssh_keys[_]
-        key.mode != "0600"
-        f := {
-          "rule_id": "DEMO003",
-          "evidence": sprintf("Key %s has mode %s (expected 0600)", [key.path, key.mode]),
-        }
-      }
 
   - id: DEMO004
     title: Shell history is world-readable
@@ -59,11 +32,3 @@ rules:
       Shell history files often contain secrets pasted on the command line.
       World-readable history exposes them to any local user.
     remediation: "Run: chmod 600 ~/.bash_history ~/.zsh_history"
-    policy: |
-      findings contains f if {
-        input.shell_history.world_readable
-        f := {
-          "rule_id": "DEMO004",
-          "evidence": sprintf("%s has mode %s (world-readable)", [input.shell_history.path, input.shell_history.mode]),
-        }
-      }
