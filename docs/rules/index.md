@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 63 built-in rules across 11 categories.
+obacht includes 64 built-in rules across 11 categories.
 
 | ID     | Category    | Title                                                | Severity |
 |--------|-------------|------------------------------------------------------|----------|
@@ -52,6 +52,7 @@ obacht includes 63 built-in rules across 11 categories.
 | OS034  | OS          | AirPlay Receiver is enabled                          | warn     |
 | OS035  | OS          | Automatic download of OS updates is disabled         | warn     |
 | OS036  | OS          | macOS major version is unsupported                   | warn     |
+| OS037  | OS          | App Store in-app review prompts are enabled          | info     |
 | PTH001 | PATH        | World-writable directory in PATH                     | high     |
 | PTH002 | PATH        | Relative path entry in PATH                          | warn     |
 | PRV001 | Privacy     | No password manager application detected             | warn     |
