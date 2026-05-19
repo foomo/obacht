@@ -8,15 +8,6 @@ rules:
       environment. Missing tools may indicate gaps in your security
       workflow.
     remediation: "Install missing tools via your package manager"
-    policy: |
-      findings contains f if {
-        tool := input.tools[_]
-        not tool.installed
-        f := {
-          "rule_id": "TOL001",
-          "evidence": sprintf("Tool '%s' is not installed", [tool.name]),
-        }
-      }
   - id: TOL002
     title: Homebrew auto-update is disabled
     severity: warn
@@ -27,15 +18,6 @@ rules:
       it via HOMEBREW_NO_AUTO_UPDATE means security patches in
       dependencies may not be applied promptly.
     remediation: "Remove or unset the HOMEBREW_NO_AUTO_UPDATE environment variable"
-    policy: |
-      findings contains f if {
-        input.homebrew_installed
-        input.homebrew_auto_update_disabled
-        f := {
-          "rule_id": "TOL002",
-          "evidence": "HOMEBREW_NO_AUTO_UPDATE is set, preventing automatic formula updates",
-        }
-      }
   - id: TOL003
     title: Package manager metadata is stale
     severity: warn
@@ -47,21 +29,3 @@ rules:
       added or upgraded. Refresh metadata regularly to ensure timely
       access to upstream fixes.
     remediation: "Run `brew update` (Homebrew) or `sudo apt update` (apt) to refresh package metadata"
-    policy: |
-      findings contains f if {
-        pm := input.package_managers[_]
-        pm.age_days >= 0
-        pm.age_days > 7
-        f := {
-          "rule_id": "TOL003",
-          "evidence": sprintf("%s metadata last refreshed %d days ago (>7)", [pm.name, pm.age_days]),
-        }
-      }
-      skips contains s if {
-        pm := input.package_managers[_]
-        pm.age_days < 0
-        s := {
-          "rule_id": "TOL003",
-          "evidence": sprintf("%s last-update timestamp unavailable", [pm.name]),
-        }
-      }

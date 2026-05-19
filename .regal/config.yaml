@@ -1,0 +1,15 @@
+rules:
+  idiomatic:
+    # We group per-rule .rego files into a shared category package
+    # (e.g. obacht.path) so the engine can extract findings under data.obacht.
+    # The directory layout is rules/policy/<cat>/<RULEID>.rego.
+    directory-package-mismatch:
+      level: ignore
+    # Entrypoint annotations are not used; the engine queries data.obacht
+    # and walks all subpackages.
+    no-defined-entrypoint:
+      level: ignore
+  style:
+    # Some evidence strings push past the default line limit. Keep readable.
+    line-length:
+      level: ignore

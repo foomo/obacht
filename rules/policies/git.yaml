@@ -8,14 +8,6 @@ rules:
       in ~/.git-credentials. Use a secure credential helper like
       'osxkeychain' (macOS), 'manager' (Windows), or 'cache' (Linux).
     remediation: "Run: git config --global credential.helper osxkeychain"
-    policy: |
-      findings contains f if {
-        input.credential_helper == "store"
-        f := {
-          "rule_id": "GIT001",
-          "evidence": "Git credential helper is set to 'store' which saves passwords in plaintext",
-        }
-      }
   - id: GIT002
     title: Git commit signing is not enabled
     severity: warn
@@ -25,15 +17,6 @@ rules:
       Without it, anyone with repository access can forge commits
       under your identity.
     remediation: "See: https://docs.github.com/en/authentication/managing-commit-signature-verification"
-    policy: |
-      findings contains f if {
-        input.installed
-        not input.signing_enabled
-        f := {
-          "rule_id": "GIT002",
-          "evidence": "Git commit signing is not enabled",
-        }
-      }
   - id: GIT003
     title: Git safe.directory set to wildcard
     severity: high
@@ -44,15 +27,6 @@ rules:
       CVE-2022-24765 where a malicious repository in a shared
       directory could execute arbitrary commands.
     remediation: "Run: git config --global --unset-all safe.directory"
-    policy: |
-      findings contains f if {
-        input.installed
-        input.safe_directory_wildcard
-        f := {
-          "rule_id": "GIT003",
-          "evidence": "Git safe.directory is set to '*', disabling ownership checks for all repositories",
-        }
-      }
   - id: GIT004
     title: Global gitignore does not exclude macOS artifacts
     severity: warn
@@ -62,15 +36,6 @@ rules:
       resource forks (._*) that should never be committed. A global
       gitignore exclusion prevents these from leaking into repositories.
     remediation: "Add missing entries to your global gitignore: git config --global core.excludesfile ~/.gitignore_global && edit ~/.gitignore_global"
-    policy: |
-      findings contains f if {
-        input.installed
-        count(input.gitignore_missing_macos) > 0
-        f := {
-          "rule_id": "GIT004",
-          "evidence": sprintf("Global gitignore is missing %d macOS entries: %s", [count(input.gitignore_missing_macos), concat(", ", input.gitignore_missing_macos)]),
-        }
-      }
   - id: GIT005
     title: Global gitignore does not exclude key and certificate files
     severity: warn
@@ -80,15 +45,6 @@ rules:
       to a repository. A global gitignore exclusion for common key file
       extensions (*.pem, *.key, *.p12, etc.) acts as a safety net.
     remediation: "Add missing entries to your global gitignore: git config --global core.excludesfile ~/.gitignore_global && edit ~/.gitignore_global"
-    policy: |
-      findings contains f if {
-        input.installed
-        count(input.gitignore_missing_keys) > 0
-        f := {
-          "rule_id": "GIT005",
-          "evidence": sprintf("Global gitignore is missing %d key/cert entries: %s", [count(input.gitignore_missing_keys), concat(", ", input.gitignore_missing_keys)]),
-        }
-      }
   - id: GIT006
     title: Global gitignore does not exclude environment secrets
     severity: warn
@@ -99,12 +55,3 @@ rules:
       A global exclusion acts as a safety net alongside per-repo
       .gitignore files.
     remediation: "Add missing entries to your global gitignore: git config --global core.excludesfile ~/.gitignore_global && edit ~/.gitignore_global"
-    policy: |
-      findings contains f if {
-        input.installed
-        count(input.gitignore_missing_env) > 0
-        f := {
-          "rule_id": "GIT006",
-          "evidence": sprintf("Global gitignore is missing %d env entries: %s", [count(input.gitignore_missing_env), concat(", ", input.gitignore_missing_env)]),
-        }
-      }

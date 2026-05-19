@@ -44,7 +44,10 @@ tmp/
 !.golangci.yaml
 !.goreleaser.yaml
 
-## Node ##
+## Regal
+!.regal/
+
+## Node
 !.npmrc
 **/node_modules/
 

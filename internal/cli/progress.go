@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"strings"
 
 	"charm.land/bubbles/v2/progress"
@@ -56,11 +57,12 @@ type scanModel struct {
 	err         error
 	done        bool
 	ctx         context.Context //nolint:containedctx
+	fsys        fs.FS
 	rules       []schema.RulesFile
 	program     *tea.Program
 }
 
-func newScanModel(ctx context.Context, ruleFiles []schema.RulesFile) *scanModel {
+func newScanModel(ctx context.Context, fsys fs.FS, ruleFiles []schema.RulesFile) *scanModel {
 	var cats []categoryState
 
 	catIndex := make(map[string]int)
@@ -92,6 +94,7 @@ func newScanModel(ctx context.Context, ruleFiles []schema.RulesFile) *scanModel 
 		bar:        bar,
 		spin:       sp,
 		ctx:        ctx,
+		fsys:       fsys,
 		rules:      ruleFiles,
 	}
 }
@@ -256,7 +259,7 @@ func (m *scanModel) runScan() tea.Cmd {
 			}
 		}
 
-		result, err := engine.Evaluate(m.ctx, m.rules, callback)
+		result, err := engine.EvaluateWithFS(m.ctx, m.fsys, m.rules, callback)
 
 		return scanDoneMsg{result: result, err: err}
 	}

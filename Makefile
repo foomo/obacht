@@ -32,7 +32,7 @@ endif
 
 .PHONY: check
 ## Run lint & tests
-check: tidy generate lint test.race audit
+check: tidy generate lint lint.rules test.race audit
 
 .PHONY: lint
 ## Run linter
@@ -45,6 +45,38 @@ lint:
 lint.fix:
 	@echo "〉golangci-lint run fix"
 	golangci-lint run --fix --max-same-issues 0 --max-issues-per-linter 0
+
+.PHONY: lint.rules
+## Lint embedded rule artifacts (shell + rego)
+lint.rules: lint.shell lint.policy
+
+.PHONY: lint.shell
+## Run shellcheck on rule input scripts
+lint.shell:
+	@echo "〉shellcheck rules/inputs/**/*.sh"
+	@shellcheck -x rules/inputs/_lib/*.sh rules/inputs/*/*.sh
+
+.PHONY: lint.policy
+## Run regal on rule policies
+lint.policy:
+	@echo "〉regal lint rules/policy/"
+	@regal lint rules/policy/
+
+.PHONY: fmt.rules
+## Format embedded rule artifacts (shell + rego)
+fmt.rules: fmt.shell fmt.policy
+
+.PHONY: fmt.shell
+## Format rule shell scripts with shfmt
+fmt.shell:
+	@echo "〉shfmt -w rules/inputs/"
+	@shfmt -w rules/inputs/
+
+.PHONY: fmt.policy
+## Format rule rego policies with opa fmt
+fmt.policy:
+	@echo "〉opa fmt -w rules/policy/"
+	@opa fmt -w rules/policy/
 
 .PHONY: generate
 ## Run go generate

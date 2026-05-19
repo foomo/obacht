@@ -8,12 +8,6 @@ rules:
       system files and directories. Disabling SIP significantly weakens
       macOS security.
     remediation: "Boot into Recovery Mode and run: csrutil enable"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.sip_enabled
-        f := {"rule_id": "OS001", "evidence": "System Integrity Protection is disabled"}
-      }
   - id: OS002
     title: FileVault disk encryption is disabled
     severity: critical
@@ -23,12 +17,6 @@ rules:
       Without it, data on the disk can be accessed by removing or
       mounting the drive externally.
     remediation: "Enable FileVault in System Settings > Privacy & Security > FileVault"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.filevault_enabled
-        f := {"rule_id": "OS002", "evidence": "FileVault disk encryption is disabled"}
-      }
   - id: OS003
     title: Application Firewall is disabled
     severity: high
@@ -37,12 +25,6 @@ rules:
       The application firewall controls incoming network connections
       on a per-application basis.
     remediation: "Run: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.firewall_enabled
-        f := {"rule_id": "OS003", "evidence": "Application Firewall is disabled"}
-      }
   - id: OS004
     title: Stealth Mode is disabled
     severity: high
@@ -51,12 +33,6 @@ rules:
       Stealth Mode prevents the Mac from responding to probing requests
       such as ICMP ping, making it harder to discover on the network.
     remediation: "Run: sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.stealth_mode_enabled
-        f := {"rule_id": "OS004", "evidence": "Stealth Mode is disabled"}
-      }
   - id: OS005
     title: Gatekeeper is disabled
     severity: critical
@@ -66,12 +42,6 @@ rules:
       are signed by an identified developer or distributed via the
       App Store.
     remediation: "Run: sudo spctl --master-enable"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.gatekeeper_enabled
-        f := {"rule_id": "OS005", "evidence": "Gatekeeper is disabled"}
-      }
   - id: OS006
     title: Automatic login is enabled
     severity: high
@@ -80,12 +50,6 @@ rules:
       Automatic login allows anyone with physical access to use the
       Mac without authentication.
     remediation: "Disable in System Settings > Users & Groups > Automatic login"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.auto_login_disabled
-        f := {"rule_id": "OS006", "evidence": "Automatic login is enabled"}
-      }
   - id: OS007
     title: Guest account is enabled
     severity: high
@@ -94,12 +58,6 @@ rules:
       The guest account allows unauthenticated access to the Mac
       and can be used as an attack vector.
     remediation: "Disable in System Settings > Users & Groups > Guest User"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.guest_account_disabled
-        f := {"rule_id": "OS007", "evidence": "Guest account is enabled"}
-      }
   - id: OS008
     title: Screen lock timeout exceeds 5 minutes
     severity: warn
@@ -109,15 +67,6 @@ rules:
       unattended. The timeout should be 300 seconds (5 minutes)
       or less.
     remediation: "Set in System Settings > Wallpaper > Screen saver ... > Start Screen Saver..."
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.screen_lock_timeout_seconds > 300
-        f := {
-          "rule_id": "OS008",
-          "evidence": sprintf("Screen lock timeout is %d seconds (maximum 300)", [input.screen_lock_timeout_seconds]),
-        }
-      }
   - id: OS009
     title: Automatic OS updates are disabled
     severity: high
@@ -126,12 +75,6 @@ rules:
       Automatic OS updates ensure critical security patches are
       applied promptly.
     remediation: "Run: softwareupdate --schedule on"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.os_auto_update_enabled
-        f := {"rule_id": "OS009", "evidence": "Automatic OS updates are disabled"}
-      }
   - id: OS010
     title: Automatic App Store updates are disabled
     severity: warn
@@ -139,13 +82,7 @@ rules:
     description: |
       Automatic App Store updates keep applications patched against
       known vulnerabilities.
-    remediation: "Enable in System Settings > General > Software Update > Automatic Updates"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.app_auto_update_enabled
-        f := {"rule_id": "OS010", "evidence": "Automatic App Store updates are disabled"}
-      }
+    remediation: "Enable in App Store > Settings > Automatic Updates"
   - id: OS011
     title: Rapid Security Responses are disabled
     severity: high
@@ -154,12 +91,6 @@ rules:
       Rapid Security Responses deliver urgent security fixes between
       regular OS updates.
     remediation: "Enable in System Settings > General > Software Update > Automatic Updates"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.rsr_enabled
-        f := {"rule_id": "OS011", "evidence": "Rapid Security Responses are disabled"}
-      }
   - id: OS013
     title: Screen Sharing is enabled
     severity: high
@@ -168,12 +99,6 @@ rules:
       Screen Sharing allows remote access to the Mac desktop and
       should be disabled unless actively needed.
     remediation: "Run: sudo launchctl disable system/com.apple.screensharing"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.screen_sharing_disabled
-        f := {"rule_id": "OS013", "evidence": "Screen Sharing is enabled"}
-      }
   - id: OS014
     title: Internet Sharing is enabled
     severity: high
@@ -182,12 +107,6 @@ rules:
       Internet Sharing turns the Mac into a network gateway, which
       can expose internal networks.
     remediation: "Disable in System Settings > General > Sharing > Internet Sharing"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.internet_sharing_disabled
-        f := {"rule_id": "OS014", "evidence": "Internet Sharing is enabled"}
-      }
   - id: OS015
     title: Printer Sharing is enabled
     severity: warn
@@ -196,12 +115,6 @@ rules:
       Printer Sharing exposes the Mac on the network and should be
       disabled unless required.
     remediation: "Disable in System Settings > General > Sharing > Printer Sharing"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.printer_sharing_disabled
-        f := {"rule_id": "OS015", "evidence": "Printer Sharing is enabled"}
-      }
   - id: OS016
     title: Remote Apple Events are enabled
     severity: high
@@ -210,12 +123,6 @@ rules:
       Remote Apple Events allow other computers to send Apple Events
       to this Mac, which can be used to execute commands remotely.
     remediation: "Disable in System Settings > General > Sharing > Remote Apple Events"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.remote_apple_events_disabled
-        f := {"rule_id": "OS016", "evidence": "Remote Apple Events are enabled"}
-      }
   - id: OS017
     title: AirDrop is set to Everyone
     severity: high
@@ -224,12 +131,6 @@ rules:
       Setting AirDrop to Everyone allows any nearby device to send
       files, increasing the risk of social engineering attacks.
     remediation: "Set AirDrop to Contacts Only or Off in Finder > AirDrop"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.airdrop_setting == "everyone"
-        f := {"rule_id": "OS017", "evidence": "AirDrop is set to Everyone"}
-      }
   - id: OS018
     title: No EDR agent deployed
     severity: warn
@@ -238,12 +139,6 @@ rules:
       An Endpoint Detection & Response agent provides real-time
       threat monitoring and incident response capabilities.
     remediation: "Install the organization-approved EDR agent"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.edr_deployed
-        f := {"rule_id": "OS018", "evidence": "No Endpoint Detection & Response agent deployed"}
-      }
   - id: OS019
     title: Legacy kernel extensions are not blocked
     severity: warn
@@ -252,12 +147,6 @@ rules:
       Legacy kernel extensions (kexts) run with full kernel privileges
       and should be replaced with System Extensions.
     remediation: "Configure system extension policy via MDM or System Settings"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.legacy_kexts_blocked
-        f := {"rule_id": "OS019", "evidence": "Legacy kernel extensions (kexts) are not blocked"}
-      }
   - id: OS020
     title: Device is not enrolled in MDM
     severity: info
@@ -266,12 +155,6 @@ rules:
       MDM enrollment enables centralized security policy enforcement,
       remote wipe, and compliance monitoring.
     remediation: "Enroll the device via your organization's MDM solution"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.mdm_enrolled
-        f := {"rule_id": "OS020", "evidence": "Device is not enrolled in MDM"}
-      }
   - id: OS021
     title: Rosetta 2 is installed
     severity: info
@@ -280,12 +163,6 @@ rules:
       Rosetta 2 enables running Intel binaries on Apple Silicon. If
       no longer needed, removing it reduces attack surface.
     remediation: "Remove Rosetta 2 if no Intel-only applications are required"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.rosetta_installed
-        f := {"rule_id": "OS021", "evidence": "Rosetta 2 is installed; remove if no longer needed to reduce attack surface"}
-      }
   - id: OS022
     title: AirDrop is not fully disabled
     severity: info
@@ -294,13 +171,6 @@ rules:
       For high-risk roles, consider disabling AirDrop entirely
       rather than using Contacts Only.
     remediation: "Set AirDrop to Off in Finder > AirDrop"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.airdrop_setting != "off"
-        input.airdrop_setting != "everyone"
-        f := {"rule_id": "OS022", "evidence": sprintf("AirDrop is set to %s; consider disabling entirely", [input.airdrop_setting])}
-      }
   - id: OS023
     title: Time Machine backup is disabled
     severity: warn
@@ -309,12 +179,6 @@ rules:
       Time Machine provides automatic backups that protect against data
       loss from ransomware, hardware failure, or accidental deletion.
     remediation: "Enable Time Machine in System Settings > General > Time Machine"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.timemachine_enabled
-        f := {"rule_id": "OS023", "evidence": "Time Machine backup is not enabled or no backup destination is configured"}
-      }
   - id: OS024
     title: Remote Login (SSH server) is enabled
     severity: high
@@ -324,12 +188,6 @@ rules:
       shell access. This expands the attack surface and should be
       disabled unless actively needed.
     remediation: "Disable in System Settings > General > Sharing > Remote Login"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.remote_login_disabled
-        f := {"rule_id": "OS024", "evidence": "Remote Login (SSH server) is enabled"}
-      }
   - id: OS025
     title: Remote Management is enabled
     severity: high
@@ -339,12 +197,6 @@ rules:
       Remote Desktop or VNC. This should be disabled unless required
       by IT policy.
     remediation: "Disable in System Settings > General > Sharing > Remote Management"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.remote_management_disabled
-        f := {"rule_id": "OS025", "evidence": "Remote Management is enabled"}
-      }
   - id: OS026
     title: Bluetooth Sharing is enabled
     severity: warn
@@ -353,12 +205,6 @@ rules:
       Bluetooth Sharing allows other devices to send files via
       Bluetooth. This should be disabled to reduce attack surface.
     remediation: "Disable in System Settings > General > Sharing > Bluetooth Sharing"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.bluetooth_sharing_disabled
-        f := {"rule_id": "OS026", "evidence": "Bluetooth Sharing is enabled"}
-      }
   - id: OS027
     title: Media Sharing is enabled
     severity: warn
@@ -367,12 +213,6 @@ rules:
       Media Sharing exposes media libraries on the local network and
       should be disabled to reduce attack surface.
     remediation: "Disable in System Settings > General > Sharing > Media Sharing"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.media_sharing_disabled
-        f := {"rule_id": "OS027", "evidence": "Media Sharing is enabled"}
-      }
   - id: OS028
     title: File Sharing (SMB) is enabled
     severity: warn
@@ -381,12 +221,6 @@ rules:
       File Sharing opens SMB network ports, allowing other devices to
       access shared folders. This should be disabled unless actively needed.
     remediation: "Disable in System Settings > General > Sharing > File Sharing"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.file_sharing_disabled
-        f := {"rule_id": "OS028", "evidence": "File Sharing (SMB) is enabled"}
-      }
   - id: OS029
     title: Content Caching is enabled
     severity: warn
@@ -396,12 +230,6 @@ rules:
       on the network. On developer machines this is unnecessary and
       increases network exposure.
     remediation: "Disable in System Settings > General > Sharing > Content Caching"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.content_caching_disabled
-        f := {"rule_id": "OS029", "evidence": "Content Caching is enabled"}
-      }
   - id: OS030
     title: Current user has local admin privileges
     severity: warn
@@ -412,12 +240,6 @@ rules:
       extensions, modify system files, or escalate without a separate
       authentication step.
     remediation: "Create a separate non-admin daily-use account; reserve admin account for elevation only"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.user_is_admin
-        f := {"rule_id": "OS030", "evidence": "Current user has local admin privileges"}
-      }
   - id: OS031
     title: Password not required immediately after screen lock
     severity: high
@@ -427,32 +249,6 @@ rules:
       prompt allows an attacker with brief physical access to use the
       machine without authentication.
     remediation: "System Settings > Lock Screen > Require password — set to Immediately (or run: sysadminctl -screenLock immediate -password -)"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.password_required_on_lock
-        input.password_lock_delay_seconds > 0
-        f := {
-          "rule_id": "OS031",
-          "evidence": sprintf("Password not required immediately after screen lock (delay: %ds)", [input.password_lock_delay_seconds]),
-        }
-      }
-      findings contains f if {
-        input.os == "darwin"
-        input.password_lock_delay_seconds == -2
-        f := {
-          "rule_id": "OS031",
-          "evidence": "Screen lock is disabled — no password required after screensaver",
-        }
-      }
-      skips contains s if {
-        input.os == "darwin"
-        input.password_lock_delay_seconds == -1
-        s := {
-          "rule_id": "OS031",
-          "evidence": "Could not determine screen-lock password delay (sysadminctl unavailable and legacy askForPasswordDelay unreadable)",
-        }
-      }
   - id: OS032
     title: Time Machine destination is not encrypted
     severity: warn
@@ -462,25 +258,6 @@ rules:
       An unencrypted backup disk leaks all data if the disk is lost
       or stolen.
     remediation: "In Time Machine settings, remove the destination and re-add with 'Encrypt Backups' enabled"
-    policy: |
-      tm_dest_evaluable if {
-        input.os == "darwin"
-        input.timemachine_enabled
-        input.timemachine_destination_connected
-      }
-
-      skips contains s if {
-        input.os == "darwin"
-        input.timemachine_enabled
-        not input.timemachine_destination_connected
-        s := {"rule_id": "OS032", "evidence": "Time Machine destination not connected — cannot evaluate encryption"}
-      }
-
-      findings contains f if {
-        tm_dest_evaluable
-        not input.timemachine_destination_encrypted
-        f := {"rule_id": "OS032", "evidence": "Time Machine destination is not encrypted"}
-      }
   - id: OS033
     title: Time Machine has no recent backup
     severity: warn
@@ -489,19 +266,6 @@ rules:
       Stale backups do not protect against ransomware, hardware failure,
       or accidental deletion. Backups should run within the last 14 days.
     remediation: "Connect the backup destination and let Time Machine complete a backup"
-    policy: |
-      skips contains s if {
-        input.os == "darwin"
-        input.timemachine_enabled
-        not input.timemachine_destination_connected
-        s := {"rule_id": "OS033", "evidence": "Time Machine destination not connected — cannot evaluate backup recency"}
-      }
-
-      findings contains f if {
-        tm_dest_evaluable
-        not input.timemachine_recent_backup
-        f := {"rule_id": "OS033", "evidence": "Time Machine has no backup within the last 14 days"}
-      }
   - id: OS034
     title: AirPlay Receiver is enabled
     severity: warn
@@ -511,12 +275,6 @@ rules:
       to this Mac. On developer machines this is unnecessary and
       increases attack surface.
     remediation: "System Settings > General > AirDrop & Handoff > AirPlay Receiver — turn off"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.airplay_receiver_enabled
-        f := {"rule_id": "OS034", "evidence": "AirPlay Receiver is enabled"}
-      }
   - id: OS035
     title: Automatic download of OS updates is disabled
     severity: warn
@@ -525,12 +283,6 @@ rules:
       When updates are not pre-downloaded, install lag widens and
       security patches arrive slower.
     remediation: "System Settings > General > Software Update > Automatic Updates — turn on Download new updates when available"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        not input.os_auto_download_enabled
-        f := {"rule_id": "OS035", "evidence": "Automatic download of OS updates is disabled"}
-      }
   - id: OS036
     title: macOS major version is unsupported
     severity: warn
@@ -539,13 +291,3 @@ rules:
       Apple supplies security patches only for the current and previous
       two major macOS versions. Older versions accumulate unpatched CVEs.
     remediation: "Upgrade to a current macOS version (Ventura 13 or newer)"
-    policy: |
-      findings contains f if {
-        input.os == "darwin"
-        input.macos_major_version > 0
-        input.macos_major_version < 13
-        f := {
-          "rule_id": "OS036",
-          "evidence": sprintf("macOS major version %d is no longer receiving security updates (minimum supported: 13)", [input.macos_major_version]),
-        }
-      }

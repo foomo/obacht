@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"slices"
 	"sort"
 	"strings"
@@ -26,9 +27,9 @@ type ruleGroup struct {
 	Rules  []schema.Rule
 }
 
-// Evaluate runs input scripts and evaluates rego policies for the given rule files.
-// An optional ProgressFunc callback receives events as each rule group starts and completes.
-func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile, onProgress ...ProgressFunc) (*schema.ScanResult, error) {
+// EvaluateWithFS runs input scripts (with include preprocessing against fsys)
+// and evaluates rego policies for the given rule files.
+func EvaluateWithFS(ctx context.Context, fsys fs.FS, ruleFiles []schema.RulesFile, onProgress ...ProgressFunc) (*schema.ScanResult, error) {
 	groups := buildRuleGroups(ruleFiles)
 
 	var notify ProgressFunc
@@ -51,7 +52,7 @@ func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile, onProgress ...P
 			})
 		}
 
-		groupResults, err := evaluateGroup(ctx, g)
+		groupResults, err := evaluateGroup(ctx, fsys, g)
 		if err != nil {
 			return nil, err
 		}
@@ -73,6 +74,12 @@ func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile, onProgress ...P
 	scanResult := schema.NewScanResult(results)
 
 	return &scanResult, nil
+}
+
+// Evaluate is the legacy entrypoint, using a nil fs.FS. Include directives
+// will fail to resolve under this entrypoint. Prefer EvaluateWithFS.
+func Evaluate(ctx context.Context, ruleFiles []schema.RulesFile, onProgress ...ProgressFunc) (*schema.ScanResult, error) {
+	return EvaluateWithFS(ctx, nil, ruleFiles, onProgress...)
 }
 
 // groupCategory returns the category from the first rule in the group.
@@ -179,9 +186,26 @@ func resolveField(ruleLevel, fileLevel string) string {
 }
 
 // evaluateGroup runs the input script and rego policy for a group of rules.
-func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, error) {
-	// Run input script.
-	inputResult := runner.RunInput(ctx, g.Input)
+func evaluateGroup(ctx context.Context, fsys fs.FS, g ruleGroup) ([]schema.CheckResult, error) {
+	// Use the first rule's ID as the expected envelope rule_id when the group
+	// contains exactly one rule. For multi-rule groups (shared per-category
+	// input), expectedID stays empty and the legacy bare-JSON path applies.
+	expectedID := ""
+	if len(g.Rules) == 1 {
+		expectedID = g.Rules[0].ID
+	}
+
+	scriptPath := ""
+	if len(g.Rules) > 0 {
+		scriptPath = fmt.Sprintf("inputs/%s/%s.sh", g.Rules[0].Category, g.Rules[0].ID)
+	}
+
+	var inputResult runner.InputResult
+	if fsys != nil {
+		inputResult = runner.RunInputForRule(ctx, fsys, scriptPath, g.Input, expectedID)
+	} else {
+		inputResult = runner.RunInput(ctx, g.Input)
+	}
 
 	results := make([]schema.CheckResult, 0, len(g.Rules))
 
@@ -199,6 +223,7 @@ func evaluateGroup(ctx context.Context, g ruleGroup) ([]schema.CheckResult, erro
 			switch inputResult.Status {
 			case runner.StatusSkipped:
 				cr.Status = schema.StatusSkip
+				cr.Evidence = inputResult.SkipReason
 			case runner.StatusError:
 				cr.Status = schema.StatusError
 				if inputResult.Error != nil {

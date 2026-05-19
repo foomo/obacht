@@ -9,5 +9,9 @@ regal = "0.39.0"
 lefthook = "2.1.6"
 # https://mise-tools.jdx.dev/tools/golangci-lint
 golangci-lint = "2.12.1"
+# https://mise-tools.jdx.dev/tools/shellcheck
+shellcheck = "0.11.0"
+# https://mise-tools.jdx.dev/tools/shfmt
+shfmt = "3.12.0"
 # https://github.com/charmbracelet/vhs/releases
 "github:charmbracelet/vhs" = "0.11.0"

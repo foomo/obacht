@@ -186,6 +186,7 @@ func TestPrettyReporter_ScannedRulesAndSummaryPositions(t *testing.T) {
 	scannedPos := strings.Index(out, "Scanned rules:")
 	sshPos := strings.Index(out, "SSH\n")
 	summaryPos := strings.Index(out, "Summary:")
+
 	require.Greater(t, scannedPos, -1, "Scanned rules header should be present")
 	require.Greater(t, sshPos, -1, "SSH category header should be present")
 	require.Greater(t, summaryPos, -1, "Summary line should be present")

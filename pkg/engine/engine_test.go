@@ -95,6 +95,25 @@ func TestEvaluate_NoInput(t *testing.T) {
 	assert.Empty(t, cr.Evidence)
 }
 
+func TestEvaluate_EnvelopeSkip_PropagatesReason(t *testing.T) {
+	ruleFiles := []schema.RulesFile{
+		{
+			Input:  `printf '{"rule_id":"SSH002","status":"skip","skip_reason":"no .ssh dir"}'`,
+			Policy: testPolicy,
+			Rules:  testRules,
+		},
+	}
+
+	result, err := engine.Evaluate(t.Context(), ruleFiles)
+	require.NoError(t, err)
+	require.Len(t, result.Results, 1)
+
+	cr := result.Results[0]
+	assert.Equal(t, "SSH002", cr.RuleID)
+	assert.Equal(t, schema.StatusSkip, cr.Status)
+	assert.Equal(t, "no .ssh dir", cr.Evidence)
+}
+
 func TestEvaluate_InputError(t *testing.T) {
 	ruleFiles := []schema.RulesFile{
 		{

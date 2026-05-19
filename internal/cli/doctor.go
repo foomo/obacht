@@ -3,7 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 
@@ -12,6 +14,7 @@ import (
 
 	"github.com/foomo/obacht/internal/runner"
 	"github.com/foomo/obacht/pkg/schema"
+	"github.com/foomo/obacht/rules"
 )
 
 var doctorCmd = &cobra.Command{
@@ -81,38 +84,48 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 
+	// --- Dependencies ---
+	fmt.Println(boldStyle.Render("Dependencies"))
+
+	if _, err := exec.LookPath("jq"); err == nil {
+		fmt.Printf("  %s jq found on PATH\n", greenStyle.Render("\u2713"))
+	} else {
+		fmt.Printf("  %s jq not found on PATH (required by rule scripts; install via `brew install jq`)\n", redStyle.Render("\u2717"))
+	}
+
+	fmt.Println()
+
 	// --- Input Scripts ---
 	fmt.Println(boldStyle.Render("Input Scripts"))
 
-	// Deduplicate input scripts and test each one.
-	seen := make(map[string]bool)
+	var fsys fs.FS
+	if rulesDir != "" {
+		fsys = os.DirFS(rulesDir)
+	} else {
+		fsys = rules.Embedded
+	}
 
 	for _, rf := range ruleFiles {
-		inputs := []string{rf.Input}
 		for _, r := range rf.Rules {
-			if r.Input != "" {
-				inputs = append(inputs, r.Input)
-			}
-		}
-
-		for _, input := range inputs {
-			if input == "" || seen[input] {
+			if r.Input == "" {
 				continue
 			}
 
-			seen[input] = true
-
-			result := runner.RunInput(ctx, input)
+			scriptPath := fmt.Sprintf("inputs/%s/%s.sh", r.Category, r.ID)
+			result := runner.RunInputForRule(ctx, fsys, scriptPath, r.Input, r.ID)
 
 			var icon string
 
 			switch result.Status {
 			case runner.StatusOK:
 				icon = greenStyle.Render("\u2713")
-				fmt.Printf("  %s input script ok\n", icon)
+				fmt.Printf("  %s %s ok\n", icon, r.ID)
+			case runner.StatusSkipped:
+				icon = greenStyle.Render("\u2713")
+				fmt.Printf("  %s %s skip: %s\n", icon, r.ID, result.SkipReason)
 			case runner.StatusError:
 				icon = redStyle.Render("\u2717")
-				fmt.Printf("  %s input script error: %v\n", icon, result.Error)
+				fmt.Printf("  %s %s error: %v\n", icon, r.ID, result.Error)
 			}
 		}
 	}
