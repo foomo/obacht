@@ -25,8 +25,8 @@ OPA evaluation engine:
 ## Internal Packages
 
 ### `internal/collector`
-Nine concurrent collectors gathering environment facts:
-- SSH, Git, Docker, Kubernetes, Environment, Shell, Tools, PATH, OS
+Twelve concurrent collectors gathering environment facts:
+- Claude Code, Credentials, Docker, Environment, Git, Kubernetes, OS, PATH, Privacy, Shell, SSH, Tools
 - Three-state status: ok, skipped, error
 
 ### `internal/reporter`
