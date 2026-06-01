@@ -1,5 +1,6 @@
 # Runtime dependencies for obacht rule scripts.
 brew "jq"
+brew "bumblebee"
 
 # Optional dev tooling. Most contributors use mise instead (.mise.toml).
 # Uncomment if you prefer Homebrew over mise.

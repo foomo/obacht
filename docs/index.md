@@ -15,8 +15,8 @@ hero:
       text: View Rules
       link: /rules/
 features:
-  - title: 110 Built-in Rules
-    details: Checks across Claude Code, credentials, Docker, environment variables, Git, Kubernetes, OS, PATH, privacy, shell, SSH, and tools categories
+  - title: 118 Built-in Rules
+    details: Checks across Claude Code, credentials, Docker, environment variables, Git, Kubernetes, OS, PATH, privacy, shell, SSH, bumblebee, and tools categories
   - title: OPA-Powered
     details: Uses an embedded Open Policy Agent engine with Rego policies for flexible, extensible security evaluation — no external dependencies required
   - title: Extensible

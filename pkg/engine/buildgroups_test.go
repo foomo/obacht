@@ -57,6 +57,30 @@ func TestBuildRuleGroups_IsolatesPackageDecl(t *testing.T) {
 	assert.Len(t, groups[1].Rules, 1)
 }
 
+// TestBuildRuleGroups_SharedFileLevelPolicyWithPackage verifies that a
+// file-level policy starting with `package …` does NOT cause per-rule
+// isolation. All rules share one input + one policy and must merge into a
+// single group (regression: bumblebee category rules were each isolated,
+// triggering `rule_id mismatch` envelope errors).
+func TestBuildRuleGroups_SharedFileLevelPolicyWithPackage(t *testing.T) {
+	rf := schema.RulesFile{
+		Input: `printf '{"x":1}'`,
+		Policy: "package obacht.a\n" +
+			"import rego.v1\n\n" +
+			`findings contains f if { f := {"rule_id":"A1","evidence":"a1"} }`,
+		Rules: []schema.Rule{
+			{ID: "A1", Category: "a"},
+			{ID: "A2", Category: "a"},
+			{ID: "A3", Category: "a"},
+		},
+	}
+
+	groups := engine.BuildRuleGroups([]schema.RulesFile{rf})
+	require.Len(t, groups, 1, "rules sharing a file-level policy must merge into one group even when policy declares a package")
+	assert.Len(t, groups[0].Rules, 3)
+	assert.Contains(t, groups[0].Policy, "package obacht.a")
+}
+
 // TestBuildRuleGroups_RuleLevelInputSeparates verifies that a rule with a
 // distinct rule-level input is placed in its own group.
 func TestBuildRuleGroups_RuleLevelInputSeparates(t *testing.T) {

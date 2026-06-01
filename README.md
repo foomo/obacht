@@ -21,7 +21,7 @@ obacht inspects your local development setup for security misconfigurations — 
 
 ## Features
 
-- **110 built-in rules** across 12 categories: SSH, Git, Docker, Kubernetes, env, shell, tools, PATH, OS, credentials, privacy, Claude Code
+- **118 built-in rules** across 13 categories: SSH, Git, Docker, Kubernetes, env, shell, tools, PATH, OS, credentials, privacy, Claude Code, bumblebee
 - **OPA-powered** with an embedded Rego engine — no external dependencies
 - **Read-only collectors** — never modifies system state
 - **Extensible** via `--rules-dir` for custom Rego policies

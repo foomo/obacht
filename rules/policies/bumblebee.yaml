@@ -1,0 +1,86 @@
+rules:
+  - id: BUM001
+    title: Compromised npm package present on disk
+    severity: critical
+    category: bumblebee
+    description: |
+      An npm package on disk matches an entry in the bundled exposure
+      catalog of known-compromised releases (e.g. shai-hulud worm,
+      typosquats, credential stealers). The match is exact on
+      (ecosystem, name, version); presence on disk is not proof of
+      execution, but indicates exposure that responders should triage.
+    remediation: "Remove or downgrade the affected package; rotate any secrets exposed by the package's lifecycle scripts; see the catalog entry's reporting for scope"
+
+  - id: BUM002
+    title: Compromised PyPI package present on disk
+    severity: critical
+    category: bumblebee
+    description: |
+      A PyPI package on disk matches an entry in the bundled exposure
+      catalog of known-malicious releases. The match is exact on
+      (name, version). Presence indicates exposure even if the package
+      was not imported.
+    remediation: "Uninstall the package (`pip uninstall <name>`); rotate any secrets that the package could have read; review post-install hooks in `*.dist-info/INSTALLER`"
+
+  - id: BUM003
+    title: Compromised Go module present on disk
+    severity: critical
+    category: bumblebee
+    description: |
+      A Go module recorded in `go.sum` or `go.mod` matches an entry
+      in the bundled exposure catalog. Go module presence does not
+      imply execution (modules run only if compiled in), but the
+      match warrants investigation of dependent binaries.
+    remediation: "Pin to a clean version, run `go mod tidy`, rebuild and redeploy affected binaries"
+
+  - id: BUM004
+    title: Compromised RubyGem present on disk
+    severity: critical
+    category: bumblebee
+    description: |
+      An installed RubyGem matches an entry in the bundled exposure
+      catalog of known-malicious releases. Gems can run install-time
+      hooks; treat presence as potential compromise pending review.
+    remediation: "Uninstall the gem (`gem uninstall <name> -v <version>`); rotate developer credentials; audit `~/.gem` for unexpected artifacts"
+
+  - id: BUM005
+    title: Compromised Composer package present on disk
+    severity: critical
+    category: bumblebee
+    description: |
+      A Composer (Packagist) package recorded in `composer.lock` or
+      `vendor/composer/installed.json` matches an entry in the bundled
+      exposure catalog of known-malicious releases.
+    remediation: "Remove the affected package version, regenerate `composer.lock`, redeploy affected applications"
+
+  - id: BUM006
+    title: Compromised MCP server configured
+    severity: critical
+    category: bumblebee
+    description: |
+      An MCP server referenced in a host config (Claude Desktop,
+      Cline, Gemini CLI, etc.) matches an entry in the bundled
+      exposure catalog. MCP servers run with the host process'
+      privileges and have broad tool access.
+    remediation: "Remove the server entry from the relevant `mcp.json` / `claude_desktop_config.json` / equivalent; restart the host application; rotate any credentials the server could read"
+
+  - id: BUM007
+    title: Compromised editor extension installed
+    severity: critical
+    category: bumblebee
+    description: |
+      A VS Code / Cursor / Windsurf / VSCodium extension on disk
+      matches an entry in the bundled exposure catalog (e.g. the
+      nx-console campaign). Editor extensions run with the
+      developer's local privileges.
+    remediation: "Uninstall the extension from the editor; remove any cached extension directory; rotate developer credentials; review the editor's extension audit log"
+
+  - id: BUM008
+    title: Compromised browser extension installed
+    severity: critical
+    category: bumblebee
+    description: |
+      A Chromium-family or Firefox extension manifest on disk matches
+      an entry in the bundled exposure catalog. Browser extensions
+      typically have access to all visited pages and stored credentials.
+    remediation: "Uninstall the extension from each browser profile; force a password rotation for high-value accounts the affected browser was signed into"
