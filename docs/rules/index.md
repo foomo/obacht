@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 110 built-in rules across 12 categories.
+obacht includes 118 built-in rules across 13 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -102,6 +102,14 @@ obacht includes 110 built-in rules across 12 categories.
 | PRV004 | Privacy     | Untrusted DNS resolver is configured                                      | warn     |
 | PRV005 | Privacy     | DO_NOT_TRACK env var is not set                                           | info     |
 | SHL001 | Shell       | Shell history file has weak permissions                                   | warn     |
+| BUM001 | Bumblebee   | Compromised npm package present on disk                                   | critical |
+| BUM002 | Bumblebee   | Compromised PyPI package present on disk                                  | critical |
+| BUM003 | Bumblebee   | Compromised Go module present on disk                                     | critical |
+| BUM004 | Bumblebee   | Compromised RubyGem present on disk                                       | critical |
+| BUM005 | Bumblebee   | Compromised Composer package present on disk                              | critical |
+| BUM006 | Bumblebee   | Compromised MCP server configured                                         | critical |
+| BUM007 | Bumblebee   | Compromised editor extension installed                                    | critical |
+| BUM008 | Bumblebee   | Compromised browser extension installed                                   | critical |
 | SSH001 | SSH         | SSH private key has weak permissions                                      | high     |
 | SSH002 | SSH         | SSH directory has weak permissions                                        | high     |
 | SSH003 | SSH         | SSH StrictHostKeyChecking is disabled                                     | high     |

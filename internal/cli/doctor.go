@@ -27,6 +27,22 @@ func init() {
 	rootCmd.AddCommand(doctorCmd)
 }
 
+// bumblebeeVersion returns the first whitespace-separated token from
+// `bumblebee version`, or "(version unknown)" on any failure.
+func bumblebeeVersion(ctx context.Context, path string) string {
+	out, err := exec.CommandContext(ctx, path, "version").Output()
+	if err != nil {
+		return "(version unknown)"
+	}
+
+	fields := strings.Fields(string(out))
+	if len(fields) == 0 {
+		return "(version unknown)"
+	}
+
+	return fields[0]
+}
+
 func runDoctor(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
@@ -91,6 +107,15 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  %s jq found on PATH\n", greenStyle.Render("\u2713"))
 	} else {
 		fmt.Printf("  %s jq not found on PATH (required by rule scripts; install via `brew install jq`)\n", redStyle.Render("\u2717"))
+	}
+
+	if path, err := exec.LookPath("bumblebee"); err == nil {
+		version := bumblebeeVersion(ctx, path)
+		fmt.Printf("  %s bumblebee %s\n", greenStyle.Render("\u2713"), version)
+		fmt.Println("    bumblebee rules (BUM*) enabled")
+	} else {
+		fmt.Printf("  %s bumblebee not found on PATH (bumblebee rules BUM* will skip)\n", redStyle.Render("\u2717"))
+		fmt.Println("    install: go install github.com/perplexityai/bumblebee/cmd/bumblebee@latest")
 	}
 
 	fmt.Println()

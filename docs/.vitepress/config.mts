@@ -45,6 +45,7 @@ export default defineConfig({
           { text: 'Privacy', link: '/rules/privacy' },
           { text: 'Shell', link: '/rules/shell' },
           { text: 'SSH', link: '/rules/ssh' },
+          { text: 'Bumblebee', link: '/rules/bumblebee' },
           { text: 'Tools', link: '/rules/tools' },
         ],
       },

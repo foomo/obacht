@@ -118,7 +118,11 @@ func buildRuleGroups(ruleFiles []schema.RulesFile) []ruleGroup {
 			input := resolveField(rule.Input, rf.Input)
 			policy := resolveField(rule.Policy, rf.Policy)
 
-			if strings.HasPrefix(strings.TrimSpace(policy), "package ") {
+			// Isolate only when the rule supplies its own policy with a package
+			// declaration. File-level shared policies are bucketed normally —
+			// the policy string is identical across siblings and dedupes in
+			// `b.policies`.
+			if rule.Policy != "" && strings.HasPrefix(strings.TrimSpace(rule.Policy), "package ") {
 				groups = append(groups, ruleGroup{
 					Input:  input,
 					Policy: preparePolicy(policy, rule.Category),

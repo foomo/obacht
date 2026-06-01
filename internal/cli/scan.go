@@ -336,6 +336,16 @@ func runScan(cmd *cobra.Command, args []string) error {
 	// Exclude specific rules (blocklist, applied last).
 	ruleFiles = excludeRuleFilesByID(ruleFiles, excludeIDs)
 
+	// Materialize the embedded bumblebee exposure catalog under the user cache
+	// directory and export its path so bumblebee-category input scripts can
+	// find it. Persistent cache (rewritten each scan) — no cleanup needed,
+	// avoids the defer-vs-os.Exit hazard.
+	if catalogDir, err := materializeBumblebeeCatalog(); err == nil {
+		_ = os.Setenv("OBACHT_BUMBLEBEE_CATALOG_DIR", catalogDir)
+	} else {
+		fmt.Fprintf(os.Stderr, "preparing bumblebee catalog: %v (bumblebee rules will skip)\n", err)
+	}
+
 	// Evaluate all rule files.
 	var scanResult *schema.ScanResult
 
@@ -409,6 +419,33 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 
 		baseName := strings.TrimSuffix(filepath.Base(path), ".yaml")
 
+		// Category-shared input: inputs/<cat>.sh
+		if rf.Input == "" {
+			shared, err := resolveInputFromFS(rules.Embedded, "inputs", baseName)
+			if err != nil {
+				return fmt.Errorf("resolving shared input for %s: %w", path, err)
+			}
+
+			rf.Input = shared
+		}
+
+		// Category-shared policy bundle: policy/<cat>/*.rego
+		// Engaged only when a shared input exists; otherwise per-rule policy
+		// resolution below handles the standard layout.
+		bundled := false
+
+		if rf.Input != "" && rf.Policy == "" {
+			bundle, err := bundleRegoFromFS(rules.Embedded, "policy/"+baseName)
+			if err != nil {
+				return fmt.Errorf("bundling shared policy for %s: %w", path, err)
+			}
+
+			if bundle != "" {
+				rf.Policy = bundle
+				bundled = true
+			}
+		}
+
 		// Per-rule resolution.
 		for i := range rf.Rules {
 			rule := &rf.Rules[i]
@@ -426,7 +463,7 @@ func loadEmbeddedRuleFiles() ([]schema.RulesFile, error) {
 				rule.Input = perRule
 			}
 
-			if rule.Policy == "" {
+			if !bundled && rule.Policy == "" {
 				perRule, err := resolveRegoFromFS(rules.Embedded, "policy/"+baseName, rule.ID)
 				if err != nil {
 					return fmt.Errorf("resolving policy for rule %s: %w", rule.ID, err)
@@ -476,6 +513,33 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 
 		baseName := strings.TrimSuffix(entry.Name(), ".yaml")
 
+		// Category-shared input: <dir>/inputs/<cat>.sh
+		if rf.Input == "" {
+			sharedPath := filepath.Join(dir, "inputs", baseName+".sh")
+
+			data, err := os.ReadFile(sharedPath)
+			if err == nil {
+				rf.Input = string(data)
+			} else if !errors.Is(err, os.ErrNotExist) {
+				return nil, fmt.Errorf("reading shared input %s: %w", sharedPath, err)
+			}
+		}
+
+		// Category-shared policy bundle: <dir>/policy/<cat>/*.rego
+		bundled := false
+
+		if rf.Input != "" && rf.Policy == "" {
+			bundle, err := bundleRegoFromFS(os.DirFS(dir), "policy/"+baseName)
+			if err != nil {
+				return nil, fmt.Errorf("bundling shared policy for %s: %w", path, err)
+			}
+
+			if bundle != "" {
+				rf.Policy = bundle
+				bundled = true
+			}
+		}
+
 		// Per-rule resolution from inputs/<cat>/<RULEID>.sh and policy/<cat>/<RULEID>.rego.
 		for i := range rf.Rules {
 			rule := &rf.Rules[i]
@@ -495,7 +559,7 @@ func loadExternalRuleFiles(dir string) ([]schema.RulesFile, error) {
 				}
 			}
 
-			if rule.Policy == "" {
+			if !bundled && rule.Policy == "" {
 				regoPath := filepath.Join(dir, "policy", baseName, rule.ID+".rego")
 
 				data, err := os.ReadFile(regoPath)
@@ -556,6 +620,140 @@ func resolveInputFromFS(fsys fs.FS, inputsDir, baseName string) (string, error) 
 	}
 
 	return string(data), nil
+}
+
+// materializeBumblebeeCatalog writes the embedded bumblebee exposure catalog
+// JSONs into a stable subdirectory of the user cache dir and returns its
+// absolute path. Each scan rewrites the files and prunes any stale entries
+// left from a previous obacht version. A persistent cache avoids the
+// defer-vs-os.Exit hazard of a per-run temp dir.
+func materializeBumblebeeCatalog() (string, error) {
+	cacheRoot, err := os.UserCacheDir()
+	if err != nil {
+		return "", fmt.Errorf("locating user cache dir: %w", err)
+	}
+
+	dir := filepath.Join(cacheRoot, "obacht", "bumblebee-catalog")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", fmt.Errorf("creating cache dir: %w", err)
+	}
+
+	entries, err := fs.ReadDir(rules.BumblebeeCatalog, "catalogs/bumblebee")
+	if err != nil {
+		return "", fmt.Errorf("reading embedded catalog: %w", err)
+	}
+
+	want := make(map[string]struct{}, len(entries))
+
+	wrote := 0
+
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+
+		data, err := fs.ReadFile(rules.BumblebeeCatalog, "catalogs/bumblebee/"+e.Name())
+		if err != nil {
+			return "", fmt.Errorf("reading %s: %w", e.Name(), err)
+		}
+
+		if err := os.WriteFile(filepath.Join(dir, e.Name()), data, 0o600); err != nil {
+			return "", fmt.Errorf("writing %s: %w", e.Name(), err)
+		}
+
+		want[e.Name()] = struct{}{}
+		wrote++
+	}
+
+	if wrote == 0 {
+		return "", errors.New("no catalog files embedded")
+	}
+
+	if existing, err := os.ReadDir(dir); err == nil {
+		for _, e := range existing {
+			if e.IsDir() {
+				continue
+			}
+
+			if _, keep := want[e.Name()]; !keep {
+				_ = os.Remove(filepath.Join(dir, e.Name()))
+			}
+		}
+	}
+
+	return dir, nil
+}
+
+// bundleRegoFromFS reads every <dir>/*.rego in fsys and concatenates them into
+// a single valid rego module. The first file is kept verbatim (including its
+// `package` + `import` header); subsequent files have their leading
+// package/import/comment block stripped so the result has exactly one header.
+// Files are processed in lexicographic order for determinism — name shared
+// helpers with a leading underscore (e.g. `_helpers.rego`) to anchor them
+// first. Returns "" when the directory is absent or contains no .rego files.
+func bundleRegoFromFS(fsys fs.FS, dir string) (string, error) {
+	entries, err := fs.ReadDir(fsys, dir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", nil
+		}
+
+		return "", err
+	}
+
+	var files []string
+
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".rego") {
+			files = append(files, e.Name())
+		}
+	}
+
+	if len(files) == 0 {
+		return "", nil
+	}
+
+	sort.Strings(files)
+
+	parts := make([]string, 0, len(files))
+
+	for i, name := range files {
+		data, err := fs.ReadFile(fsys, dir+"/"+name)
+		if err != nil {
+			return "", err
+		}
+
+		body := strings.TrimRight(string(data), "\n")
+
+		if i > 0 {
+			body = stripRegoHeader(body)
+		}
+
+		if body != "" {
+			parts = append(parts, body)
+		}
+	}
+
+	return strings.Join(parts, "\n\n") + "\n", nil
+}
+
+// stripRegoHeader removes the leading package/import/comment/blank block from
+// a rego source so it can be appended after another rego module that already
+// carries the canonical header.
+func stripRegoHeader(src string) string {
+	lines := strings.Split(src, "\n")
+
+	start := 0
+	for ; start < len(lines); start++ {
+		t := strings.TrimSpace(lines[start])
+		if t == "" || strings.HasPrefix(t, "#") || strings.HasPrefix(t, "package ") || strings.HasPrefix(t, "import ") {
+			continue
+		}
+
+		break
+	}
+
+	return strings.TrimRight(strings.Join(lines[start:], "\n"), "\n")
 }
 
 // resolveRegoFromFS checks for <dir>/<RULEID>.rego in fsys and returns its
