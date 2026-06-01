@@ -1,5 +1,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/foomo/obacht?style=flat-square)](https://goreportcard.com/report/github.com/foomo/obacht)
 [![GoDoc](https://img.shields.io/badge/GoDoc-✓-informational.svg?style=flat-square&logo=go)](https://godoc.org/github.com/foomo/obacht)
+[![Coverage](https://img.shields.io/codecov/c/github/foomo/obacht?style=flat-square&logo=github)](https://app.codecov.io/gh/foomo/obacht)
 [![GitHub Downloads](https://img.shields.io/github/downloads/foomo/obacht/total.svg?style=flat-square&logo=github)](https://github.com/foomo/obacht/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/foomo/obacht.svg?style=flat-square&logo=docker)](https://hub.docker.com/r/foomo/obacht)
 [![GitHub Stars](https://img.shields.io/github/stars/foomo/obacht.svg?style=flat-square&logo=github)](https://github.com/foomo/obacht)
@@ -20,7 +21,7 @@ obacht inspects your local development setup for security misconfigurations — 
 
 ## Features
 
-- **98 built-in rules** across 12 categories: SSH, Git, Docker, Kubernetes, env, shell, tools, PATH, OS, credentials, privacy
+- **110 built-in rules** across 12 categories: SSH, Git, Docker, Kubernetes, env, shell, tools, PATH, OS, credentials, privacy, Claude Code
 - **OPA-powered** with an embedded Rego engine — no external dependencies
 - **Read-only collectors** — never modifies system state
 - **Extensible** via `--rules-dir` for custom Rego policies

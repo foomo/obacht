@@ -1,17 +1,21 @@
 # OS Rules
 
-macOS-specific security configuration checks. These rules verify that critical operating system protections are enabled and sharing services are properly restricted.
+macOS-specific security configuration checks. These rules verify that critical operating system protections are enabled
+and sharing services are properly restricted.
 
 ## OS001: System Integrity Protection is disabled
 
 **Severity:** critical
 
-System Integrity Protection (SIP) prevents modification of protected system files and directories. Disabling SIP significantly weakens macOS security and allows malware to tamper with system components.
+System Integrity Protection (SIP) prevents modification of protected system files and directories. Disabling SIP
+significantly weakens macOS security and allows malware to tamper with system components.
 
 **What it checks:**
+
 - Whether SIP is enabled via `csrutil status`
 
 **Remediation:**
+
 ```bash
 # Boot into Recovery Mode and run:
 csrutil enable
@@ -21,9 +25,11 @@ csrutil enable
 
 **Severity:** critical
 
-FileVault provides full-disk encryption protecting data at rest. Without it, data on the disk can be accessed by removing or mounting the drive externally.
+FileVault provides full-disk encryption protecting data at rest. Without it, data on the disk can be accessed by
+removing or mounting the drive externally.
 
 **What it checks:**
+
 - Whether FileVault is enabled via `fdesetup status`
 
 **Remediation:**
@@ -34,12 +40,15 @@ Enable FileVault in System Settings > Privacy & Security > FileVault.
 
 **Severity:** high
 
-The application firewall controls incoming network connections on a per-application basis, blocking unauthorized access attempts.
+The application firewall controls incoming network connections on a per-application basis, blocking unauthorized access
+attempts.
 
 **What it checks:**
+
 - Whether the macOS application firewall is enabled
 
 **Remediation:**
+
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 ```
@@ -48,12 +57,15 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 
 **Severity:** high
 
-Stealth Mode prevents the Mac from responding to probing requests such as ICMP ping, making it harder to discover on the network.
+Stealth Mode prevents the Mac from responding to probing requests such as ICMP ping, making it harder to discover on the
+network.
 
 **What it checks:**
+
 - Whether Stealth Mode is enabled in the application firewall
 
 **Remediation:**
+
 ```bash
 sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
 ```
@@ -62,12 +74,15 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
 
 **Severity:** critical
 
-Gatekeeper ensures only trusted software runs by verifying apps are signed by an identified developer or distributed via the App Store.
+Gatekeeper ensures only trusted software runs by verifying apps are signed by an identified developer or distributed via
+the App Store.
 
 **What it checks:**
+
 - Whether Gatekeeper is enabled via `spctl --status`
 
 **Remediation:**
+
 ```bash
 sudo spctl --master-enable
 ```
@@ -79,6 +94,7 @@ sudo spctl --master-enable
 Automatic login allows anyone with physical access to use the Mac without authentication.
 
 **What it checks:**
+
 - Whether `autoLoginUser` is set in login window preferences
 
 **Remediation:**
@@ -92,6 +108,7 @@ Disable in System Settings > Users & Groups > Automatic login.
 The guest account allows unauthenticated access to the Mac and can be used as an attack vector.
 
 **What it checks:**
+
 - Whether the Guest account is enabled in login window preferences
 
 **Remediation:**
@@ -102,9 +119,11 @@ Disable in System Settings > Users & Groups > Guest User.
 
 **Severity:** warn
 
-A long screen lock timeout leaves the Mac accessible when unattended. The timeout should be 300 seconds (5 minutes) or less.
+A long screen lock timeout leaves the Mac accessible when unattended. The timeout should be 300 seconds (5 minutes) or
+less.
 
 **What it checks:**
+
 - The screensaver idle time setting
 - Whether it exceeds 300 seconds
 
@@ -119,9 +138,11 @@ Set in System Settings > Lock Screen > Require password after screen saver begin
 Automatic OS updates ensure critical security patches are applied promptly without manual intervention.
 
 **What it checks:**
+
 - Whether `AutomaticallyInstallMacOSUpdates` is enabled
 
 **Remediation:**
+
 ```bash
 softwareupdate --schedule on
 ```
@@ -133,6 +154,7 @@ softwareupdate --schedule on
 Automatic App Store updates keep applications patched against known vulnerabilities.
 
 **What it checks:**
+
 - Whether automatic App Store updates are enabled
 
 **Remediation:**
@@ -143,9 +165,11 @@ Enable in System Settings > General > Software Update > Automatic Updates.
 
 **Severity:** high
 
-Rapid Security Responses deliver urgent security fixes between regular OS updates, providing faster protection against active threats.
+Rapid Security Responses deliver urgent security fixes between regular OS updates, providing faster protection against
+active threats.
 
 **What it checks:**
+
 - Whether `ConfigDataInstall` is enabled in Software Update preferences
 
 **Remediation:**
@@ -159,9 +183,11 @@ Enable in System Settings > General > Software Update > Automatic Updates.
 Screen Sharing allows remote access to the Mac desktop and should be disabled unless actively needed.
 
 **What it checks:**
+
 - Whether the `com.apple.screensharing` service is running
 
 **Remediation:**
+
 ```bash
 sudo launchctl disable system/com.apple.screensharing
 ```
@@ -173,6 +199,7 @@ sudo launchctl disable system/com.apple.screensharing
 Internet Sharing turns the Mac into a network gateway, which can expose internal networks to unauthorized access.
 
 **What it checks:**
+
 - Whether Internet Sharing is enabled in network preferences
 
 **Remediation:**
@@ -186,6 +213,7 @@ Disable in System Settings > General > Sharing > Internet Sharing.
 Printer Sharing exposes the Mac on the network and should be disabled unless required.
 
 **What it checks:**
+
 - Whether CUPS printer sharing is enabled
 
 **Remediation:**
@@ -196,9 +224,11 @@ Disable in System Settings > General > Sharing > Printer Sharing.
 
 **Severity:** high
 
-Remote Apple Events allow other computers to send Apple Events to this Mac, which can be used to execute commands remotely.
+Remote Apple Events allow other computers to send Apple Events to this Mac, which can be used to execute commands
+remotely.
 
 **What it checks:**
+
 - Whether the `com.apple.AEServer` service is running
 
 **Remediation:**
@@ -212,6 +242,7 @@ Disable in System Settings > General > Sharing > Remote Apple Events.
 Setting AirDrop to Everyone allows any nearby device to send files, increasing the risk of social engineering attacks.
 
 **What it checks:**
+
 - The AirDrop discoverability setting
 
 **Remediation:**
@@ -220,11 +251,12 @@ Set AirDrop to Contacts Only or Off in Finder > AirDrop.
 
 ## OS018: No EDR agent deployed
 
-**Severity:** warn
+**Severity:** info
 
 An Endpoint Detection & Response agent provides real-time threat monitoring and incident response capabilities.
 
 **What it checks:**
+
 - Whether a recognized EDR agent is running (CrowdStrike, SentinelOne, Carbon Black, Microsoft Defender)
 
 **Remediation:**
@@ -233,11 +265,12 @@ Install the organization-approved EDR agent.
 
 ## OS019: Legacy kernel extensions are not blocked
 
-**Severity:** warn
+**Severity:** info
 
 Legacy kernel extensions (kexts) run with full kernel privileges and should be replaced with System Extensions.
 
 **What it checks:**
+
 - Whether legacy kernel extensions are loaded via `kmutil`
 
 **Remediation:**
@@ -251,6 +284,7 @@ Configure system extension policy via MDM or System Settings.
 MDM enrollment enables centralized security policy enforcement, remote wipe, and compliance monitoring.
 
 **What it checks:**
+
 - Whether the device is enrolled in MDM via `profiles status`
 
 **Remediation:**
@@ -264,6 +298,7 @@ Enroll the device via your organization's MDM solution.
 Rosetta 2 enables running Intel binaries on Apple Silicon. If no longer needed, removing it reduces attack surface.
 
 **What it checks:**
+
 - Whether the `oahd` (Rosetta) process is running
 
 **Remediation:**
@@ -277,6 +312,7 @@ Remove Rosetta 2 if no Intel-only applications are required.
 For high-risk roles, consider disabling AirDrop entirely rather than using Contacts Only.
 
 **What it checks:**
+
 - Whether AirDrop is set to any value other than Off
 
 **Remediation:**
@@ -287,9 +323,11 @@ Set AirDrop to Off in Finder > AirDrop.
 
 **Severity:** warn
 
-Time Machine provides automatic backups that protect against data loss from ransomware, hardware failure, or accidental deletion.
+Time Machine provides automatic backups that protect against data loss from ransomware, hardware failure, or accidental
+deletion.
 
 **What it checks:**
+
 - Whether Time Machine is enabled with a configured backup destination
 
 **Remediation:**
@@ -300,9 +338,11 @@ Enable Time Machine in System Settings > General > Time Machine.
 
 **Severity:** high
 
-Remote Login runs an SSH server on the Mac, allowing remote shell access. This expands the attack surface and should be disabled unless actively needed.
+Remote Login runs an SSH server on the Mac, allowing remote shell access. This expands the attack surface and should be
+disabled unless actively needed.
 
 **What it checks:**
+
 - Whether the Remote Login (SSH) service is enabled via `systemsetup`
 
 **Remediation:**
@@ -313,9 +353,11 @@ Disable in System Settings > General > Sharing > Remote Login.
 
 **Severity:** high
 
-Remote Management allows remote control of the Mac via Apple Remote Desktop or VNC. This should be disabled unless required by IT policy.
+Remote Management allows remote control of the Mac via Apple Remote Desktop or VNC. This should be disabled unless
+required by IT policy.
 
 **What it checks:**
+
 - Whether the `com.apple.RemoteDesktop.agent` service is running
 
 **Remediation:**
@@ -329,6 +371,7 @@ Disable in System Settings > General > Sharing > Remote Management.
 Bluetooth Sharing allows other devices to send files via Bluetooth. This should be disabled to reduce attack surface.
 
 **What it checks:**
+
 - Whether Bluetooth Sharing is enabled in Bluetooth preferences
 
 **Remediation:**
@@ -342,6 +385,7 @@ Disable in System Settings > General > Sharing > Bluetooth Sharing.
 Media Sharing exposes media libraries on the local network and should be disabled to reduce attack surface.
 
 **What it checks:**
+
 - Whether home sharing is enabled in media sharing preferences
 
 **Remediation:**
@@ -352,9 +396,11 @@ Disable in System Settings > General > Sharing > Media Sharing.
 
 **Severity:** warn
 
-File Sharing opens SMB network ports, allowing other devices to access shared folders. This should be disabled unless actively needed.
+File Sharing opens SMB network ports, allowing other devices to access shared folders. This should be disabled unless
+actively needed.
 
 **What it checks:**
+
 - Whether the `com.apple.smbd` service is running
 
 **Remediation:**
@@ -365,9 +411,11 @@ Disable in System Settings > General > Sharing > File Sharing.
 
 **Severity:** warn
 
-Content Caching shares downloaded Apple content with other devices on the network. On developer machines this is unnecessary and increases network exposure.
+Content Caching shares downloaded Apple content with other devices on the network. On developer machines this is
+unnecessary and increases network exposure.
 
 **What it checks:**
+
 - Whether Content Caching is activated in system preferences
 
 **Remediation:**
@@ -378,9 +426,11 @@ Disable in System Settings > General > Sharing > Content Caching.
 
 **Severity:** warn
 
-Daily-use accounts should not have local admin privileges. An attacker compromising a non-admin account cannot install kernel extensions, modify system files, or escalate without a separate authentication step.
+Daily-use accounts should not have local admin privileges. An attacker compromising a non-admin account cannot install
+kernel extensions, modify system files, or escalate without a separate authentication step.
 
 **What it checks:**
+
 - Whether the current user is in the `admin` group
 
 **Remediation:**
@@ -391,17 +441,21 @@ Create a separate non-admin daily-use account; reserve the admin account for ele
 
 **Severity:** high
 
-A delay between the screensaver/lock activating and the password prompt allows an attacker with brief physical access to use the machine without authentication.
+A delay between the screensaver/lock activating and the password prompt allows an attacker with brief physical access to
+use the machine without authentication.
 
 **What it checks:**
+
 - Primary: `sysadminctl -screenLock status` — fires when delay > 0 or lock is OFF
 - Fallback (pre-Ventura): `com.apple.screensaver askForPassword` and `askForPasswordDelay`
 
-**Note:** This check is skipped when neither `sysadminctl` nor the legacy `askForPasswordDelay` defaults key returns a usable value, since the screen-lock delay cannot be determined.
+**Note:** This check is skipped when neither `sysadminctl` nor the legacy `askForPasswordDelay` defaults key returns a
+usable value, since the screen-lock delay cannot be determined.
 
 **Remediation:**
 
 System Settings > Lock Screen > Require password — set to *Immediately*. CLI:
+
 ```bash
 sysadminctl -screenLock immediate -password -
 ```
@@ -410,10 +464,13 @@ sysadminctl -screenLock immediate -password -
 
 **Severity:** warn
 
-Time Machine backups contain the full contents of the system. An unencrypted backup disk leaks all data if the disk is lost or stolen.
+Time Machine backups contain the full contents of the system. An unencrypted backup disk leaks all data if the disk is
+lost or stolen.
 
 **What it checks:**
-- Resolves the Time Machine destination mount point from `tmutil destinationinfo`, then runs `diskutil info "<mount-point>"` and looks for `FileVault: Yes` (modern APFS-based Time Machine, Ventura+)
+
+- Resolves the Time Machine destination mount point from `tmutil destinationinfo`, then runs
+  `diskutil info "<mount-point>"` and looks for `FileVault: Yes` (modern APFS-based Time Machine, Ventura+)
 - Also accepts `Encrypted: Yes` from `diskutil info` for legacy CoreStorage-backed HFS+ destinations (Apple_HFSX)
 - Falls back to `Encrypted: Yes` in `tmutil destinationinfo` for legacy HFS+ sparsebundle destinations
 
@@ -421,30 +478,38 @@ Time Machine backups contain the full contents of the system. An unencrypted bac
 
 In Time Machine settings, remove the destination and re-add with **Encrypt Backups** enabled.
 
-**Note:** This check is skipped when the Time Machine destination is not currently mounted, since the encryption status read from cached metadata can be stale.
+**Note:** This check is skipped when the Time Machine destination is not currently mounted, since the encryption status
+read from cached metadata can be stale.
 
 ## OS033: Time Machine has no recent backup
 
 **Severity:** warn
 
-Stale backups do not protect against ransomware, hardware failure, or accidental deletion. Backups should run within the last 14 days.
+Stale backups do not protect against ransomware, hardware failure, or accidental deletion. Backups should run within the
+last 14 days.
 
 **What it checks:**
-- Reads the `LastBackupActivity` key from `/Library/Preferences/com.apple.TimeMachine` via `defaults read`. Value is a `YYYY-MM-DD-HHMMSS` timestamp; the rule fails when the parsed time is older than 14 days
+
+- Reads the `LastBackupActivity` key from `/Library/Preferences/com.apple.TimeMachine` via `defaults read`. Value is a
+  `YYYY-MM-DD-HHMMSS` timestamp; the rule fails when the parsed time is older than 14 days
 
 **Remediation:**
 
 Connect the backup destination and let Time Machine complete a backup.
 
-**Note:** This check is skipped when the Time Machine destination is not currently mounted. Backup recency cannot be evaluated without access to the destination volume. `tmutil latestbackup` is intentionally avoided because it requires Full Disk Access.
+**Note:** This check is skipped when the Time Machine destination is not currently mounted. Backup recency cannot be
+evaluated without access to the destination volume. `tmutil latestbackup` is intentionally avoided because it requires
+Full Disk Access.
 
 ## OS034: AirPlay Receiver is enabled
 
 **Severity:** warn
 
-AirPlay Receiver allows nearby devices to mirror or send media to this Mac. On developer machines this is unnecessary and increases attack surface.
+AirPlay Receiver allows nearby devices to mirror or send media to this Mac. On developer machines this is unnecessary
+and increases attack surface.
 
 **What it checks:**
+
 - Whether `com.apple.controlcenter AirplayRecieverEnabled` (current host) is `1`
 
 **Remediation:**
@@ -458,6 +523,7 @@ System Settings > General > AirDrop & Handoff > AirPlay Receiver — turn off.
 When updates are not pre-downloaded, install lag widens and security patches arrive slower.
 
 **What it checks:**
+
 - Whether `com.apple.SoftwareUpdate AutomaticDownload` is `1`
 
 **Remediation:**
@@ -468,9 +534,11 @@ System Settings > General > Software Update > Automatic Updates — turn on **Do
 
 **Severity:** warn
 
-Apple supplies security patches only for the current and previous two major macOS versions. Older versions accumulate unpatched CVEs.
+Apple supplies security patches only for the current and previous two major macOS versions. Older versions accumulate
+unpatched CVEs.
 
 **What it checks:**
+
 - Major version reported by `sw_vers -productVersion`
 - Triggers if version is below 13 (Ventura)
 
@@ -482,12 +550,15 @@ Upgrade to a current macOS version (Ventura 13 or newer).
 
 **Severity:** info
 
-The App Store can prompt users for app reviews via the `InAppReviewEnabled` preference. Disabling it suppresses these prompts and reduces unsolicited UI interruptions.
+The App Store can prompt users for app reviews via the `InAppReviewEnabled` preference. Disabling it suppresses these
+prompts and reduces unsolicited UI interruptions.
 
 **What it checks:**
+
 - Whether `com.apple.appstore InAppReviewEnabled` is `0`
 
 **Remediation:**
+
 ```bash
 defaults write com.apple.appstore InAppReviewEnabled -bool false
 ```

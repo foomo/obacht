@@ -133,7 +133,7 @@ rules:
     remediation: "Set AirDrop to Contacts Only or Off in Finder > AirDrop"
   - id: OS018
     title: No EDR agent deployed
-    severity: warn
+    severity: info
     category: os
     description: |
       An Endpoint Detection & Response agent provides real-time
@@ -141,7 +141,7 @@ rules:
     remediation: "Install the organization-approved EDR agent"
   - id: OS019
     title: Legacy kernel extensions are not blocked
-    severity: warn
+    severity: info
     category: os
     description: |
       Legacy kernel extensions (kexts) run with full kernel privileges
