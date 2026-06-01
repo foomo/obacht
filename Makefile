@@ -166,19 +166,17 @@ docs.build:
 	@echo "〉building docs"
 	@cd docs && bun install && bun run build
 
+.PHONY: docs.vhs
+## Record README gif via vhs
+docs.vhs: build
+	@echo "〉vhs docs/public/demo.tape"
+	@vhs docs/public/demo.tape
+
 .PHONY: godocs
 ## Open go docs
 godocs:
 	@echo "〉starting go docs"
 	@go doc -http
-
-### Demo
-
-.PHONY: demo
-## Record README demo gif via vhs
-demo: build
-	@echo "〉vhs docs/public/demo.tape"
-	@vhs docs/public/demo.tape
 
 ### Utils
 
