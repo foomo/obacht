@@ -7,13 +7,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  pages: write
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read     # actions/checkout
+      pages: write       # configure-pages, deploy-pages
+      id-token: write    # deploy-pages OIDC
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
