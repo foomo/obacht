@@ -1,0 +1,44 @@
+# Yarn Rules
+
+## YRN001: yarn npmMinimalAgeGate is below 7 days
+
+**Severity:** high
+
+Yarn berry 4.10+ supports `npmMinimalAgeGate` (in minutes, or as a duration string like `"7d"`), which delays installation of freshly published packages. A value of at least 7 days mitigates supply-chain attacks via fast-yanked malicious releases. Yarn classic (1.x) does not support this setting and is skipped.
+
+**What it checks:**
+- Whether `yarn` is on `PATH` (skipped if not installed)
+- Whether `yarn --version` reports `2.x+` (yarn 1.x is skipped)
+- Whether `yarn config get npmMinimalAgeGate` resolves to `>= 7` days (numeric values are interpreted as minutes; duration strings are parsed via the shared duration helper)
+
+**Remediation:**
+```yaml
+# ~/.yarnrc.yml
+npmMinimalAgeGate: 10080
+```
+```bash
+# or
+yarn config set --home npmMinimalAgeGate 10080
+```
+
+## YRN002: yarn install scripts are not disabled
+
+**Severity:** high
+
+Yarn berry runs lifecycle scripts (`preinstall`, `install`, `postinstall`) declared by dependencies during install. Setting `enableScripts: false` in the user/global `.yarnrc.yml` disables this behaviour, removing the primary execution vector used by compromised npm packages. Yarn classic (1.x) lacks an equivalent global toggle and is skipped.
+
+**What it checks:**
+- Whether `yarn` is on `PATH` (skipped if not installed)
+- Whether `yarn --version` reports `2.x+` (yarn 1.x is skipped)
+- Whether `yarn config get enableScripts` returns `false`
+
+**Remediation:**
+```bash
+yarn config set --home enableScripts false
+```
+```yaml
+# ~/.yarnrc.yml
+enableScripts: false
+```
+
+Note: with `enableScripts: false`, packages that need a native build (`esbuild`, `sharp`, `node-gyp` users) must be allow-listed via `npmPreapprovedPackages` in `.yarnrc.yml`.

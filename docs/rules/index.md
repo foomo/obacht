@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 118 built-in rules across 13 categories.
+obacht includes 125 built-in rules across 20 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -115,8 +115,15 @@ obacht includes 118 built-in rules across 13 categories.
 | SSH003 | SSH         | SSH StrictHostKeyChecking is disabled                                     | high     |
 | SSH004 | SSH         | SSH agent forwarding is enabled globally                                  | warn     |
 | SSH005 | SSH         | SSH key uses weak algorithm                                               | high     |
-| TOL001 | Tools       | Security-relevant tool is missing                                         | info     |
-| TOL002 | Tools       | Homebrew auto-update is disabled                                          | warn     |
-| TOL003 | Tools       | Package manager metadata is stale                                         | warn     |
-| TOL004 | Tools       | Homebrew analytics is not disabled                                        | warn     |
-| TOL005 | Tools       | Go telemetry is not disabled                                              | warn     |
+| APT001 | APT         | APT metadata is stale                                                     | warn     |
+| BRW001 | Brew        | Homebrew auto-update is disabled                                          | warn     |
+| BRW002 | Brew        | Homebrew metadata is stale                                                | warn     |
+| BRW003 | Brew        | Homebrew analytics is not disabled                                        | warn     |
+| BUN001 | Bun         | bun install.minimumReleaseAge is below 7 days                             | high     |
+| GO001  | Go          | Go telemetry is not disabled                                              | warn     |
+| MIS001 | mise        | mise minimum_release_age is below 7 days                                  | high     |
+| NPM001 | npm         | npm minimum release age is below 7 days                                   | high     |
+| NPM002 | npm         | npm install scripts are not disabled                                      | high     |
+| PNP001 | pnpm        | pnpm minimumReleaseAge is below 7 days                                    | high     |
+| YRN001 | Yarn        | yarn npmMinimalAgeGate is below 7 days                                    | high     |
+| YRN002 | Yarn        | yarn install scripts are not disabled                                     | high     |

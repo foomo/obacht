@@ -1,0 +1,24 @@
+rules:
+  - id: YRN001
+    title: yarn npmMinimalAgeGate is below 7 days
+    severity: high
+    category: yarn
+    description: |
+      Yarn berry 4.10+ supports `npmMinimalAgeGate` (in minutes or as a
+      duration string), which delays installation of freshly published
+      packages. A value of at least 7 days mitigates supply-chain
+      attacks via fast-yanked malicious releases. Yarn classic (1.x)
+      does not support this setting and is skipped.
+    remediation: 'Run `yarn config set --home npmMinimalAgeGate 10080` (or set `npmMinimalAgeGate: "7d"` in `~/.yarnrc.yml`)'
+  - id: YRN002
+    title: yarn install scripts are not disabled
+    severity: high
+    category: yarn
+    description: |
+      Yarn berry runs lifecycle scripts (preinstall, install,
+      postinstall) declared by dependencies during install. Setting
+      `enableScripts: false` in the user/global .yarnrc.yml disables
+      this behaviour, removing the primary execution vector used by
+      compromised npm packages. Yarn classic (1.x) lacks an equivalent
+      global toggle and is skipped.
+    remediation: 'Run `yarn config set --home enableScripts false` (or set `enableScripts: false` in `~/.yarnrc.yml`)'

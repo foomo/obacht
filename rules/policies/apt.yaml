@@ -1,0 +1,12 @@
+rules:
+  - id: APT001
+    title: APT metadata is stale
+    severity: warn
+    category: apt
+    description: |
+      APT caches repository metadata locally. Stale metadata (older
+      than 7 days) means newly published security patches in
+      dependencies will not be discovered or installed when packages
+      are added or upgraded. Refresh metadata regularly to ensure
+      timely access to upstream fixes.
+    remediation: "Run `sudo apt update` to refresh APT package metadata"

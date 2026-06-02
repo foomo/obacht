@@ -5,7 +5,7 @@
 
 # Go telemetry opt-out check.
 if ! command -v go >/dev/null 2>&1; then
-  emit_skip TOL005 "go CLI not installed"
+  emit_skip GO001 "go CLI not installed"
   exit 0
 fi
 
@@ -17,4 +17,4 @@ else
 fi
 
 jq -cn --argjson disabled "$telemetry_disabled" --arg mode "$mode" \
-  '{telemetry_disabled: $disabled, mode: $mode}' | emit_ok TOL005
+  '{telemetry_disabled: $disabled, mode: $mode}' | emit_ok GO001

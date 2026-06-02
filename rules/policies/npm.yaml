@@ -1,0 +1,24 @@
+rules:
+  - id: NPM001
+    title: npm minimum release age is below 7 days
+    severity: high
+    category: npm
+    description: |
+      npm 11.10+ supports the `min-release-age` setting, which refuses
+      to install package versions newer than the configured number of
+      days. Setting this to at least 7 days mitigates supply-chain
+      attacks where malicious releases are typically yanked within
+      hours of publication.
+    remediation: "Run `npm config set min-release-age 7 --location=user`"
+  - id: NPM002
+    title: npm install scripts are not disabled
+    severity: high
+    category: npm
+    description: |
+      npm runs lifecycle scripts (preinstall, install, postinstall)
+      declared by dependencies during `npm install`. These scripts are
+      the primary execution vector for compromised packages — most
+      malicious npm packages deliver their payload via a postinstall
+      script. Setting `ignore-scripts=true` in the user/global npm
+      config disables this behaviour for all installs.
+    remediation: "Run `npm config set ignore-scripts true --location=user`"

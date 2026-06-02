@@ -1,0 +1,11 @@
+rules:
+  - id: MIS001
+    title: mise minimum_release_age is below 7 days
+    severity: high
+    category: mise
+    description: |
+      mise supports the `minimum_release_age` setting, which filters
+      tool versions by release date. A relative duration like "7d" or
+      an absolute cutoff date are both accepted. A value below 7 days
+      offers limited supply-chain protection.
+    remediation: 'Add `[settings]` `minimum_release_age = "7d"` to your mise config (or run `mise settings set minimum_release_age 7d`)'

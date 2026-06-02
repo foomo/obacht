@@ -14,4 +14,4 @@ if command -v brew >/dev/null 2>&1; then
 fi
 
 printf '{"homebrew_installed": %s, "homebrew_auto_update_disabled": %s}' \
-  "$homebrew_installed" "$homebrew_auto_update_disabled" | emit_ok TOL002
+  "$homebrew_installed" "$homebrew_auto_update_disabled" | emit_ok BRW001

@@ -1,0 +1,11 @@
+rules:
+  - id: PNP001
+    title: pnpm minimumReleaseAge is below 7 days
+    severity: high
+    category: pnpm
+    description: |
+      pnpm 10.16+ supports the `minimumReleaseAge` setting (in minutes),
+      which blocks installation of package versions newer than the
+      configured threshold. Setting it to at least 10080 minutes
+      (7 days) reduces exposure to compromised packages.
+    remediation: 'Add `minimumReleaseAge: 10080` to pnpm-workspace.yaml, or run `pnpm config set minimumReleaseAge 10080 --location=user`'
