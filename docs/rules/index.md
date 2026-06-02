@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 125 built-in rules across 20 categories.
+obacht includes 126 built-in rules across 20 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -120,6 +120,7 @@ obacht includes 125 built-in rules across 20 categories.
 | BRW002 | Brew        | Homebrew metadata is stale                                                | warn     |
 | BRW003 | Brew        | Homebrew analytics is not disabled                                        | warn     |
 | BUN001 | Bun         | bun install.minimumReleaseAge is below 7 days                             | high     |
+| BUN002 | Bun         | bun install scripts are not disabled                                      | high     |
 | GO001  | Go          | Go telemetry is not disabled                                              | warn     |
 | MIS001 | mise        | mise minimum_release_age is below 7 days                                  | high     |
 | NPM001 | npm         | npm minimum release age is below 7 days                                   | high     |
