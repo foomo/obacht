@@ -1,0 +1,11 @@
+rules:
+  - id: GO001
+    title: Go telemetry is not disabled
+    severity: warn
+    category: go
+    description: |
+      The Go toolchain (1.23+) collects local telemetry counters by
+      default (mode "local"), and can optionally upload them to the Go
+      team (mode "on"). Setting telemetry mode to "off" disables all
+      collection and upload.
+    remediation: 'Run `go telemetry off` to disable telemetry collection'

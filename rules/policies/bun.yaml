@@ -1,0 +1,27 @@
+rules:
+  - id: BUN001
+    title: bun install.minimumReleaseAge is below 7 days
+    severity: high
+    category: bun
+    description: |
+      Bun 1.3+ supports `install.minimumReleaseAge` in bunfig.toml
+      (value in seconds). Setting it to at least 604800 (7 days)
+      blocks installation of fresh, potentially compromised package
+      versions. The global bunfig is resolved from $BUN_CONFIG_FILE,
+      $XDG_CONFIG_HOME/.bunfig.toml, then $HOME/.bunfig.toml.
+    remediation: 'Add `[install]` `minimumReleaseAge = 604800` to `~/.bunfig.toml`'
+  - id: BUN002
+    title: bun install scripts are not disabled
+    severity: high
+    category: bun
+    description: |
+      Bun runs lifecycle scripts (preinstall, install, postinstall,
+      prepare) declared by dependencies during `bun install`. These
+      scripts are the primary execution vector for compromised
+      packages — most malicious npm releases deliver their payload
+      via a postinstall script. Setting `[install].ignoreScripts =
+      true` in the global bunfig disables this behaviour for all
+      installs. Bun has no `config get` subcommand, so the global
+      bunfig is resolved from `$BUN_CONFIG_FILE`, `$XDG_CONFIG_HOME`,
+      then `$HOME`.
+    remediation: 'Add `[install]` `ignoreScripts = true` to `~/.bunfig.toml`'

@@ -1,0 +1,50 @@
+rules:
+  - id: NPM001
+    title: npm minimum release age is below 7 days
+    severity: high
+    category: npm
+    description: |
+      npm 11.10+ supports the `min-release-age` setting, which refuses
+      to install package versions newer than the configured number of
+      days. Setting this to at least 7 days mitigates supply-chain
+      attacks where malicious releases are typically yanked within
+      hours of publication.
+    remediation: "Run `npm config set min-release-age 7 --location=user`"
+  - id: NPM002
+    title: npm install scripts are not disabled
+    severity: high
+    category: npm
+    description: |
+      npm runs lifecycle scripts (preinstall, install, postinstall)
+      declared by dependencies during `npm install`. These scripts are
+      the primary execution vector for compromised packages — most
+      malicious npm packages deliver their payload via a postinstall
+      script. Setting `ignore-scripts=true` in the user/global npm
+      config disables this behaviour for all installs.
+    remediation: "Run `npm config set ignore-scripts true --location=user`"
+  - id: NPM003
+    title: npm allow-git is not restricted to none or root
+    severity: high
+    category: npm
+    description: |
+      npm 11.10+ supports the `allow-git` setting (values:
+      `all|none|root`). Git-based dependencies — direct or transitive
+      — can ship a `.npmrc` that overrides the git executable path,
+      enabling arbitrary code execution at install time that bypasses
+      `ignore-scripts`. `allow-git=none` blocks all git dependencies;
+      `allow-git=root` permits only those declared in the project's
+      own `package.json`. The default (`all`) is expected to change to
+      `none` in npm v12 — adopt early.
+    remediation: "Run `npm config set allow-git none --location=user` (or `root` if you need root-level git deps)"
+  - id: NPM004
+    title: npm registry is not https
+    severity: high
+    category: npm
+    description: |
+      npm's default registry should be reached over HTTPS so package
+      tarballs, version metadata, and auth tokens are protected from
+      network-level tampering and interception. An explicit downgrade
+      to `http://` in `.npmrc` disables TLS for every install and
+      every publish. Confirms the resolved value of `npm config get
+      registry` starts with `https://`.
+    remediation: "Run `npm config set registry https://registry.npmjs.org/ --location=user` (or your private registry's HTTPS URL)"

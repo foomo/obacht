@@ -235,7 +235,7 @@ func SeverityColorStyle(s schema.Severity) lipgloss.Style {
 	case schema.SeverityHigh:
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	case schema.SeverityWarn:
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
 	case schema.SeverityInfo:
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
 	default:
