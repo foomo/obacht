@@ -117,6 +117,7 @@ Use "obacht [command] --help" for more information about a command.
 
 - [Foomo Security](https://www.foomo.org/blog/tag/security/)
 - [Pareto Security](https://github.com/ParetoSecurity/pareto-mac)
+- [Npm installs will hack you](https://www.youtube.com/watch?v=Wq6yMdt11LM)
 
 ## How to Contribute
 

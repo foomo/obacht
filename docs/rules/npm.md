@@ -32,3 +32,22 @@ npm config set ignore-scripts true --location=user
 ```
 
 Note: with `ignore-scripts=true`, packages that genuinely require a build step (`esbuild`, `sharp`, `node-gyp` users) will fail to install correctly until you allow-list them per project (e.g. `npm rebuild <pkg>` after install, or use `--ignore-scripts=false` for the one install).
+
+## NPM003: npm allow-git is not restricted to none or root
+
+**Severity:** high
+
+npm 11.10+ supports the `allow-git` setting with three values: `all`, `none`, and `root`. Git-based dependencies — direct or transitive — can ship a `.npmrc` that overrides the git executable path, enabling arbitrary code execution at install time that bypasses `ignore-scripts`. `allow-git=none` blocks all git dependencies; `allow-git=root` permits only those declared in the project's own `package.json`. The default (`all`) is expected to change to `none` in npm v12.
+
+**What it checks:**
+- Whether `npm` is on `PATH` (skipped if not installed)
+- Whether `npm config get allow-git` returns `none` or `root`
+
+**Remediation:**
+```bash
+# strictest — recommended
+npm config set allow-git none --location=user
+
+# or, if you need to install git deps declared in your own package.json:
+npm config set allow-git root --location=user
+```
