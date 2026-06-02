@@ -36,3 +36,15 @@ rules:
       own `package.json`. The default (`all`) is expected to change to
       `none` in npm v12 — adopt early.
     remediation: "Run `npm config set allow-git none --location=user` (or `root` if you need root-level git deps)"
+  - id: NPM004
+    title: npm registry is not https
+    severity: high
+    category: npm
+    description: |
+      npm's default registry should be reached over HTTPS so package
+      tarballs, version metadata, and auth tokens are protected from
+      network-level tampering and interception. An explicit downgrade
+      to `http://` in `.npmrc` disables TLS for every install and
+      every publish. Confirms the resolved value of `npm config get
+      registry` starts with `https://`.
+    remediation: "Run `npm config set registry https://registry.npmjs.org/ --location=user` (or your private registry's HTTPS URL)"

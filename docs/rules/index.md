@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 127 built-in rules across 20 categories.
+obacht includes 131 built-in rules across 20 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -126,6 +126,10 @@ obacht includes 127 built-in rules across 20 categories.
 | NPM001 | npm         | npm minimum release age is below 7 days                                   | high     |
 | NPM002 | npm         | npm install scripts are not disabled                                      | high     |
 | NPM003 | npm         | npm allow-git is not restricted to none or root                           | high     |
+| NPM004 | npm         | npm registry is not https                                                 | high     |
 | PNP001 | pnpm        | pnpm minimumReleaseAge is below 7 days                                    | high     |
+| PNP002 | pnpm        | pnpm blockExoticSubdeps is not enabled                                    | high     |
+| PNP003 | pnpm        | pnpm trustPolicy is not set to no-downgrade                               | high     |
+| PNP004 | pnpm        | pnpm strictDepBuilds is not enabled                                       | high     |
 | YRN001 | Yarn        | yarn npmMinimalAgeGate is below 7 days                                    | high     |
 | YRN002 | Yarn        | yarn install scripts are not disabled                                     | high     |

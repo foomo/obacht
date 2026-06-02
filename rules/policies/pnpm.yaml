@@ -9,3 +9,42 @@ rules:
       configured threshold. Setting it to at least 10080 minutes
       (7 days) reduces exposure to compromised packages.
     remediation: 'Add `minimumReleaseAge: 10080` to pnpm-workspace.yaml, or run `pnpm config set minimumReleaseAge 10080 --location=user`'
+  - id: PNP002
+    title: pnpm blockExoticSubdeps is not enabled
+    severity: high
+    category: pnpm
+    description: |
+      pnpm 10.26+ supports `blockExoticSubdeps`. When `true`, transitive
+      dependencies cannot pull code from git repositories or raw tarball
+      URLs — sources that bypass registry security scanning. Direct
+      dependencies declared in package.json may still use exotic
+      specifiers; only their further subdeps are blocked. Defaults to
+      `true` in pnpm v11; enabling it early on 10.26+ mitigates a known
+      supply-chain vector.
+    remediation: 'Add `blockExoticSubdeps: true` to pnpm-workspace.yaml, or run `pnpm config set blockExoticSubdeps true --location=user`'
+  - id: PNP003
+    title: pnpm trustPolicy is not set to no-downgrade
+    severity: high
+    category: pnpm
+    description: |
+      pnpm 10.21+ supports `trustPolicy`. With `no-downgrade`, pnpm
+      refuses to install a package version whose trust evidence
+      (signed publisher / provenance) has regressed compared to any
+      earlier release — defeating compromised-publisher attacks where
+      the attacker drops back to unsigned releases after taking over
+      maintainer credentials. Default is unset (no trust check
+      performed).
+    remediation: 'Add `trustPolicy: no-downgrade` to pnpm-workspace.yaml, or run `pnpm config set trustPolicy no-downgrade --location=user`'
+  - id: PNP004
+    title: pnpm strictDepBuilds is not enabled
+    severity: high
+    category: pnpm
+    description: |
+      pnpm 10.3+ supports `strictDepBuilds`. When `true`, pnpm exits
+      with a non-zero code if any dependency tries to run a lifecycle
+      script that has not been explicitly allowed via `allowBuilds`
+      (or the legacy `onlyBuiltDependencies`). Without it, unallowed
+      builds become silent warnings — a transitive package can quietly
+      slip past review. Enabling this turns warnings into CI-blocking
+      failures.
+    remediation: 'Add `strictDepBuilds: true` to pnpm-workspace.yaml, or run `pnpm config set strictDepBuilds true --location=user`'

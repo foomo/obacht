@@ -51,3 +51,22 @@ npm config set allow-git none --location=user
 # or, if you need to install git deps declared in your own package.json:
 npm config set allow-git root --location=user
 ```
+
+## NPM004: npm registry is not https
+
+**Severity:** high
+
+npm's default registry should be reached over HTTPS so package tarballs, version metadata, and auth tokens are protected from network-level tampering and interception. An explicit downgrade to `http://` in `.npmrc` disables TLS for every install and every publish.
+
+**What it checks:**
+- Whether `npm` is on `PATH` (skipped if not installed)
+- Whether `npm config get registry` returns a URL starting with `https://`
+
+**Remediation:**
+```bash
+# default public registry
+npm config set registry https://registry.npmjs.org/ --location=user
+
+# or your private registry's HTTPS URL
+npm config set registry https://npm.yourcompany.com/ --location=user
+```
