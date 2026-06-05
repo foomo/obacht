@@ -56,7 +56,7 @@ brew install dnscrypt-proxy
 
 ## PRV004: Untrusted DNS resolver is configured
 
-**Severity:** warn
+**Severity:** info
 
 ISP- or router-provided DNS resolvers can log and monetize browsing activity, and may inject DNS-level redirects or telemetry. Pinning DNS to a known privacy-respecting provider eliminates the ISP/router as an observer (and pairs with PRV003 to also encrypt the queries).
 
@@ -95,3 +95,22 @@ The [`DO_NOT_TRACK`](https://donottrack.sh) environment variable is a community 
 # Add to ~/.zshrc, ~/.bashrc, or equivalent shell profile
 export DO_NOT_TRACK=1
 ```
+
+## PRV006: Custom certificate trust overrides present
+
+**Severity:** info
+
+User- or admin-installed trust overrides allow custom root certificates to authenticate any TLS endpoint, including
+attacker-controlled MITM proxies. Each override should be audited and removed if not explicitly required.
+
+**What it checks:**
+- Number of certificate entries in `security dump-trust-settings` (user domain)
+- Number of certificate entries in `security dump-trust-settings -d` (admin domain)
+
+**Remediation:**
+```bash
+security dump-trust-settings       # user domain
+security dump-trust-settings -d    # admin domain (may require sudo)
+```
+Remove unwanted entries via **Keychain Access** — find each certificate marked **Always Trust** and revert to **Use System Defaults** or delete.
+

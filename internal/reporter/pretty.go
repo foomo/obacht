@@ -16,6 +16,7 @@ var severityOrder = map[schema.Severity]int{
 	schema.SeverityHigh:     1,
 	schema.SeverityWarn:     2,
 	schema.SeverityInfo:     3,
+	schema.SeverityNote:     4,
 }
 
 // PrettyReporter renders a human-friendly, coloured report using lipgloss.
@@ -44,11 +45,13 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 	highStyle := SeverityColorStyle(schema.SeverityHigh)
 	warnStyle := SeverityColorStyle(schema.SeverityWarn)
 	infoStyle := SeverityColorStyle(schema.SeverityInfo)
-	fmt.Fprintf(w, "Scanned rules: %s, %s, %s, %s\n",
+	noteStyle := SeverityColorStyle(schema.SeverityNote)
+	fmt.Fprintf(w, "Scanned rules: %s, %s, %s, %s, %s\n",
 		critStyle.Render(fmt.Sprintf("%d critical", s.Critical)),
 		highStyle.Render(fmt.Sprintf("%d high", s.High)),
 		warnStyle.Render(fmt.Sprintf("%d warn", s.Warn)),
 		infoStyle.Render(fmt.Sprintf("%d info", s.Info)),
+		noteStyle.Render(fmt.Sprintf("%d note", s.Note)),
 	)
 	fmt.Fprintln(w, strings.Repeat("-", 60))
 	fmt.Fprintln(w)
@@ -130,7 +133,8 @@ func (p *PrettyReporter) Report(w io.Writer, result *schema.ScanResult) error {
 			}
 
 			// For failures and errors, show evidence and remediation.
-			if cr.Status == schema.StatusFail || cr.Status == schema.StatusError {
+			// Note-severity rules are status-only: skip evidence and Fix blocks.
+			if (cr.Status == schema.StatusFail || cr.Status == schema.StatusError) && cr.Severity != schema.SeverityNote {
 				if cr.Evidence != "" {
 					parts := splitEvidence(cr.Evidence)
 					switch len(parts) {
@@ -238,6 +242,8 @@ func SeverityColorStyle(s schema.Severity) lipgloss.Style {
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
 	case schema.SeverityInfo:
 		return lipgloss.NewStyle().Foreground(lipgloss.Color("4"))
+	case schema.SeverityNote:
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	default:
 		return lipgloss.NewStyle()
 	}

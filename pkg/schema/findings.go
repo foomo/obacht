@@ -8,6 +8,7 @@ const (
 	SeverityHigh     Severity = "high"
 	SeverityWarn     Severity = "warn"
 	SeverityInfo     Severity = "info"
+	SeverityNote     Severity = "note"
 )
 
 // Status represents the result status of a check.
@@ -61,6 +62,7 @@ type Summary struct {
 	High     int `json:"high"`
 	Warn     int `json:"warn"`
 	Info     int `json:"info"`
+	Note     int `json:"note"`
 }
 
 // ScanResult is the complete output of a obacht scan.
@@ -80,7 +82,11 @@ func NewScanResult(results []CheckResult) ScanResult {
 		case StatusPass:
 			s.Passed++
 		case StatusFail:
-			s.Failed++
+			// Note-severity rules are status indicators only; not counted
+			// as failures so they do not affect the exit code.
+			if r.Severity != SeverityNote {
+				s.Failed++
+			}
 		case StatusSkip:
 			s.Skipped++
 		case StatusError:
@@ -96,6 +102,8 @@ func NewScanResult(results []CheckResult) ScanResult {
 			s.Warn++
 		case SeverityInfo:
 			s.Info++
+		case SeverityNote:
+			s.Note++
 		}
 	}
 

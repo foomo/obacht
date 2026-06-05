@@ -67,17 +67,17 @@ obacht includes 131 built-in rules across 20 categories.
 | OS007  | OS          | Guest account is enabled                                                  | high     |
 | OS008  | OS          | Screen lock timeout exceeds 5 minutes                                     | warn     |
 | OS009  | OS          | Automatic OS updates are disabled                                         | high     |
-| OS010  | OS          | Automatic App Store updates are disabled                                  | warn     |
+| OS010  | OS          | Automatic App Store updates are disabled                                  | info     |
 | OS011  | OS          | Rapid Security Responses are disabled                                     | high     |
 | OS013  | OS          | Screen Sharing is enabled                                                 | high     |
 | OS014  | OS          | Internet Sharing is enabled                                               | high     |
 | OS015  | OS          | Printer Sharing is enabled                                                | warn     |
 | OS016  | OS          | Remote Apple Events are enabled                                           | high     |
 | OS017  | OS          | AirDrop is set to Everyone                                                | high     |
-| OS018  | OS          | No EDR agent deployed                                                     | info     |
-| OS019  | OS          | Legacy kernel extensions are not blocked                                  | info     |
-| OS020  | OS          | Device is not enrolled in MDM                                             | high     |
-| OS021  | OS          | Rosetta 2 is installed                                                    | info     |
+| OS018  | OS          | No EDR agent deployed                                                     | note     |
+| OS019  | OS          | Legacy kernel extensions are not blocked                                  | note     |
+| OS020  | OS          | Device is not enrolled in MDM                                             | note     |
+| OS021  | OS          | Rosetta 2 is installed                                                    | note     |
 | OS022  | OS          | AirDrop is not fully disabled                                             | info     |
 | OS023  | OS          | Time Machine backup is disabled                                           | warn     |
 | OS024  | OS          | Remote Login (SSH server) is enabled                                      | high     |
@@ -86,7 +86,7 @@ obacht includes 131 built-in rules across 20 categories.
 | OS027  | OS          | Media Sharing is enabled                                                  | warn     |
 | OS028  | OS          | File Sharing (SMB) is enabled                                             | warn     |
 | OS029  | OS          | Content Caching is enabled                                                | warn     |
-| OS030  | OS          | Current user has local admin privileges                                   | warn     |
+| OS030  | OS          | Current user has local admin privileges                                   | info     |
 | OS031  | OS          | Password not required immediately after screen lock                       | high     |
 | OS032  | OS          | Time Machine destination is not encrypted                                 | warn     |
 | OS033  | OS          | Time Machine has no recent backup                                         | warn     |

@@ -29,7 +29,7 @@ rules:
     remediation: "Configure encrypted DNS via System Settings > Network > DNS, or install dnscrypt-proxy or cloudflared"
   - id: PRV004
     title: Untrusted DNS resolver is configured
-    severity: warn
+    severity: info
     category: privacy
     description: |
       The active DNS resolvers are not on the allowlist of
@@ -55,3 +55,17 @@ rules:
       opts out of telemetry collection. When unset or not set to "1",
       tools may collect usage analytics without explicit consent.
     remediation: 'Export DO_NOT_TRACK=1 in your shell profile (e.g. ~/.zshrc or ~/.bashrc)'
+  - id: PRV006
+    title: Custom certificate trust overrides present
+    severity: info
+    category: privacy
+    description: |
+      User- or admin-installed trust overrides allow custom root
+      certificates to authenticate any TLS endpoint, including
+      attacker-controlled MITM proxies. Each override should be
+      audited and removed if not explicitly required.
+    remediation: |
+      Inspect overrides with:
+        security dump-trust-settings       # user domain
+        security dump-trust-settings -d    # admin domain
+      Remove unwanted entries via Keychain Access > certificates marked Always Trust.

@@ -119,6 +119,7 @@ Use "obacht [command] --help" for more information about a command.
 - [Pareto Security](https://github.com/ParetoSecurity/pareto-mac)
 - [NPM Security Best Practices](https://github.com/lirantal/npm-security-best-practices)
 - [Npm installs will hack you](https://www.youtube.com/watch?v=Wq6yMdt11LM)
+- [macOS Security and Privacy Guide](https://github.com/drduh/macOS-Security-and-Privacy-Guide)
 
 ## How to Contribute
 
