@@ -52,7 +52,7 @@ var scanCmd = &cobra.Command{
 
 func init() {
 	scanCmd.Flags().StringVar(&category, "category", "", "comma-separated list of categories to scan (e.g. ssh,git,env)")
-	scanCmd.Flags().StringVar(&severity, "severity", "", "comma-separated list of severities to include (critical,high,warn,info)")
+	scanCmd.Flags().StringVar(&severity, "severity", "", "comma-separated list of severities to include (critical,high,warn,info,note)")
 	scanCmd.Flags().StringVar(&rule, "rule", "", "comma-separated list of rule IDs to run (e.g. SSH001,GIT003)")
 	scanCmd.Flags().StringVar(&excludeRule, "exclude-rule", "", "comma-separated list of rule IDs to exclude (e.g. SSH001,GIT003)")
 	scanCmd.Flags().BoolVar(&showPassing, "show-passing", false, "include passing checks in pretty output (no effect on --format json)")

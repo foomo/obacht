@@ -149,7 +149,7 @@ softwareupdate --schedule on
 
 ## OS010: Automatic App Store updates are disabled
 
-**Severity:** warn
+**Severity:** info
 
 Automatic App Store updates keep applications patched against known vulnerabilities.
 
@@ -251,7 +251,7 @@ Set AirDrop to Contacts Only or Off in Finder > AirDrop.
 
 ## OS018: No EDR agent deployed
 
-**Severity:** info
+**Severity:** note
 
 An Endpoint Detection & Response agent provides real-time threat monitoring and incident response capabilities.
 
@@ -265,7 +265,7 @@ Install the organization-approved EDR agent.
 
 ## OS019: Legacy kernel extensions are not blocked
 
-**Severity:** info
+**Severity:** note
 
 Legacy kernel extensions (kexts) run with full kernel privileges and should be replaced with System Extensions.
 
@@ -279,7 +279,7 @@ Configure system extension policy via MDM or System Settings.
 
 ## OS020: Device is not enrolled in MDM
 
-**Severity:** info
+**Severity:** note
 
 MDM enrollment enables centralized security policy enforcement, remote wipe, and compliance monitoring.
 
@@ -424,7 +424,7 @@ Disable in System Settings > General > Sharing > Content Caching.
 
 ## OS030: Current user has local admin privileges
 
-**Severity:** warn
+**Severity:** info
 
 Daily-use accounts should not have local admin privileges. An attacker compromising a non-admin account cannot install
 kernel extensions, modify system files, or escalate without a separate authentication step.
@@ -562,3 +562,160 @@ prompts and reduces unsolicited UI interruptions.
 ```bash
 defaults write com.apple.appstore InAppReviewEnabled -bool false
 ```
+
+## OS038: Application firewall auto-allows signed software
+
+**Severity:** warn
+
+The macOS application firewall can automatically whitelist built-in and downloaded code-signed software for incoming
+connections, bypassing the firewall prompt. drduh's macOS guide recommends disabling this so every app must be
+explicitly approved.
+
+**What it checks:**
+
+- `/usr/libexec/ApplicationFirewall/socketfilterfw --getallowsigned` reports built-in or downloaded auto-allow ENABLED
+
+**Remediation:**
+
+```bash
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsigned off
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setallowsignedapp off
+```
+
+## OS039: Lockdown Mode is not enabled
+
+**Severity:** note
+
+Lockdown Mode is an opt-in macOS feature that significantly reduces attack surface by disabling several high-risk
+features across the OS. It is recommended for users at elevated risk of targeted attacks.
+
+**What it checks:**
+
+- Whether `.GlobalPreferences LDMGlobalEnabled` is `1`
+
+**Remediation:**
+
+Enable in System Settings > Privacy & Security > Lockdown Mode.
+
+## OS040: Diagnostic data is auto-submitted to Apple
+
+**Severity:** warn
+
+macOS may upload crash reports and diagnostic data to Apple by default. This can leak sensitive information about
+installed software, file paths, and runtime state.
+
+**What it checks:**
+
+- `AutoSubmit` and `ThirdPartyDataSubmit` keys in
+  `/Library/Application Support/CrashReporter/DiagnosticMessagesHistory.plist`
+
+**Remediation:**
+
+System Settings > Privacy & Security > Analytics & Improvements — disable **Share Mac Analytics** and **Improve Siri &
+Dictation**.
+
+## OS041: sudoers env_keep retains HOME (sudo zsh privilege escalation risk)
+
+**Severity:** high
+
+The default macOS sudoers contains `Defaults env_keep += "HOME MAIL"`. Because HOME is preserved, running `sudo zsh`
+causes root's shell to source the unprivileged user's `~/.zshrc` and dotfiles. A local attacker or malware that controls
+those dotfiles gains code execution as root the next time sudo is invoked with a shell.
+
+**What it checks:**
+
+- `/etc/sudoers` and `/etc/sudoers.d/*` for `Defaults env_keep ... HOME`
+
+**Remediation:**
+
+Run `sudo visudo` and comment out the `Defaults env_keep += "HOME MAIL"` line.
+
+## OS042: Touch ID for sudo is not configured
+
+**Severity:** warn
+
+Touch ID can authenticate sudo without typing the account password. This protects against keyloggers and
+shoulder-surfing, and reduces the chance of leaking the password into shell history or other applications.
+
+**What it checks:**
+
+- `pam_tid.so` present in `/etc/pam.d/sudo` or `/etc/pam.d/sudo_local`
+
+**Remediation:**
+
+```bash
+sudo cp /etc/pam.d/sudo_local.template /etc/pam.d/sudo_local
+sudo sed -i '' 's/^#auth/auth/' /etc/pam.d/sudo_local
+```
+
+## OS043: Wi-Fi MAC address randomization is disabled for some networks
+
+**Severity:** info
+
+A persistent Wi-Fi MAC address allows networks and on-path observers to fingerprint and track the device across
+locations and over time. macOS supports per-network "Private Wi-Fi address" — this should be enabled on every saved
+network.
+
+**What it checks:**
+
+- Each known network's `PrivateMACAddressModeUserSetting` /
+  `PrivateMACAddressModeSystemSetting` in
+  `com.apple.wifi.known-networks.plist` (falls back to
+  `com.apple.airport.preferences.plist`)
+
+**Remediation:**
+
+For each affected network: System Settings > Wi-Fi > _network_ > Details > Private Wi-Fi address — set to **Rotating**
+or **Fixed**.
+
+## OS044: Finder hides file extensions
+
+**Severity:** info
+
+When extensions are hidden, a file named `Evil.jpg.app` displays as `Evil.jpg` in Finder. Showing all extensions makes
+such double-extension social engineering attempts more obvious.
+
+**What it checks:**
+
+- Whether `NSGlobalDomain AppleShowAllExtensions` is `1`
+
+**Remediation:**
+
+```bash
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+```
+
+## OS045: New documents default to saving in iCloud Drive
+
+**Severity:** info
+
+macOS defaults to saving new documents to iCloud Drive. For machines that handle sensitive material, the default
+location should be local-only so files are not silently synced to Apple servers.
+
+**What it checks:**
+
+- Whether `NSGlobalDomain NSDocumentSaveNewDocumentsToCloud` is `0`
+
+**Remediation:**
+
+```bash
+defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
+```
+
+## OS046: Bonjour multicast advertisements are enabled
+
+**Severity:** info
+
+mDNS / Bonjour multicasts the machine's name and active services onto every local network it joins, exposing inventory
+data to anyone on the segment.
+
+**What it checks:**
+
+- Whether `/Library/Preferences/com.apple.mDNSResponder.plist NoMulticastAdvertisements` is `YES`
+
+**Remediation:**
+
+```bash
+sudo defaults write /Library/Preferences/com.apple.mDNSResponder.plist NoMulticastAdvertisements -bool YES
+```
+
