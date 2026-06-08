@@ -1,0 +1,28 @@
+rules:
+  - id: GH001
+    title: GitHub CLI telemetry is not disabled
+    severity: warn
+    category: gh
+    description: |
+      The GitHub CLI (`gh`) sends telemetry by default. Telemetry is
+      considered disabled when any of the following is true:
+        - `telemetry: false` is set in the gh config file. The config
+          dir is resolved via `$GH_CONFIG_DIR` →
+          `$XDG_CONFIG_HOME/gh` → `$HOME/.config/gh`, matching gh's
+          own precedence.
+        - `GH_TELEMETRY` env var is set to `0`, `false`, `off`, or `no`.
+        - `DO_NOT_TRACK` env var is set to `1` or `true` (cross-tool
+          opt-out convention).
+    remediation: "Set `telemetry: false` in `gh`'s config file, or export `GH_TELEMETRY=0` (or `DO_NOT_TRACK=1`) in your shell profile."
+
+  - id: GH002
+    title: Git is not configured to use `gh` as credential helper
+    severity: warn
+    category: gh
+    description: |
+      When the GitHub CLI is installed, the recommended setup delegates
+      git's credential helper to `!gh auth git-credential` for both
+      `https://github.com` and `https://gist.github.com`. Without this,
+      tokens may fall back to plaintext storage or an inconsistent
+      credential cache.
+    remediation: "Run `gh auth setup-git` to configure the credential helper for github.com and gist.github.com."

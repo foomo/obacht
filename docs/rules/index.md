@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 144 built-in rules across 20 categories.
+obacht includes 146 built-in rules across 21 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -56,6 +56,8 @@ obacht includes 144 built-in rules across 20 categories.
 | GIT002 | Git         | Git commit signing is not enabled                                         | warn     |
 | GIT003 | Git         | Git safe.directory set to wildcard                                        | high     |
 | GIT004 | Git         | Global gitignore does not exclude .env files                              | warn     |
+| GH001  | GitHub CLI  | GitHub CLI telemetry is not disabled                                      | warn     |
+| GH002  | GitHub CLI  | Git is not configured to use `gh` as credential helper                    | warn     |
 | KUB001 | Kubernetes  | Kubeconfig has weak permissions                                           | high     |
 | KUB002 | Kubernetes  | Production Kubernetes context is active                                   | warn     |
 | OS001  | OS          | System Integrity Protection is disabled                                   | critical |
