@@ -10,11 +10,11 @@ if [ "$os" != "darwin" ]; then
   exit 0
 fi
 
-save_to_icloud=false
-value=$(defaults read NSGlobalDomain NSDocumentSaveNewDocumentsToCloud 2>/dev/null)
-# Default behaviour when key is absent is to save to iCloud (= true)
-if [ -z "$value" ] || [ "$value" = "1" ]; then
-  save_to_icloud=true
+# defaults uses YES/NO for booleans on this key
+multicast_disabled=false
+value=$(defaults read /Library/Preferences/com.apple.mDNSResponder.plist NoMulticastAdvertisements 2>/dev/null)
+if [ "$value" = "1" ] || [ "$value" = "YES" ]; then
+  multicast_disabled=true
 fi
 
-jq -cn --arg os "$os" --argjson e "$save_to_icloud" '{os: $os, save_to_icloud: $e}' | emit_ok OS045
+jq -cn --arg os "$os" --argjson e "$multicast_disabled" '{os: $os, multicast_disabled: $e}' | emit_ok OS045

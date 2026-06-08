@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 131 built-in rules across 20 categories.
+obacht includes 144 built-in rules across 20 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -98,7 +98,7 @@ obacht includes 131 built-in rules across 20 categories.
 | PTH002 | PATH        | Relative path entry in PATH                                               | warn     |
 | PRV001 | Privacy     | No password manager application detected                                  | warn     |
 | PRV002 | Privacy     | No VPN configuration detected                                             | info     |
-| PRV003 | Privacy     | Encrypted DNS is not configured                                           | warn     |
+| PRV003 | Privacy     | Encrypted DNS is not configured                                           | note     |
 | PRV004 | Privacy     | Untrusted DNS resolver is configured                                      | warn     |
 | PRV005 | Privacy     | DO_NOT_TRACK env var is not set                                           | info     |
 | SHL001 | Shell       | Shell history file has weak permissions                                   | warn     |
@@ -123,6 +123,9 @@ obacht includes 131 built-in rules across 20 categories.
 | BUN002 | Bun         | bun install scripts are not disabled                                      | high     |
 | GO001  | Go          | Go telemetry is not disabled                                              | warn     |
 | MIS001 | mise        | mise minimum_release_age is below 7 days                                  | high     |
+| MIS002 | mise        | mise not_found_auto_install is enabled                                    | warn     |
+| MIS003 | mise        | mise status.missing_tools is not "always"                                 | info     |
+| MIS004 | mise        | mise github.credential_command is not "gh auth token"                     | info     |
 | NPM001 | npm         | npm minimum release age is below 7 days                                   | high     |
 | NPM002 | npm         | npm install scripts are not disabled                                      | high     |
 | NPM003 | npm         | npm allow-git is not restricted to none or root                           | high     |

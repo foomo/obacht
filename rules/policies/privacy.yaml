@@ -20,7 +20,7 @@ rules:
     remediation: "Configure a VPN in System Settings > Network > VPN or install a VPN application"
   - id: PRV003
     title: Encrypted DNS is not configured
-    severity: warn
+    severity: note
     category: privacy
     description: |
       DNS-over-HTTPS or DNS-over-TLS encrypts DNS queries, preventing
