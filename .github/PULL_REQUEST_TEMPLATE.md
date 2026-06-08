@@ -1,10 +1,10 @@
 ### Description
 
-<!-- Briefly describe what this PR does -->
+<!-- Required: One line summary of what the PR is about -->
 
 ### Type of Change
 
-<!-- Check the relevant option -->
+<!-- Check the relevant option, keep unselected ones. -->
 
 - [ ] 🐛 Bug fix
 - [ ] ✨ New feature
@@ -13,16 +13,15 @@
 - [ ] ♻️ Refactoring
 - [ ] ⚡ Performance
 - [ ] ✅ Tests
-- [ ] 🔐 Security
 - [ ] 🔧 Build/CI
 
-### Related Issue
+### Related Issues
 
-<!-- Link related issues: Fixes #123, Closes #456 -->
+<!-- List of links to related issues: Fixes #123, Closes #456 -->
 
 ### Changes
 
-<!-- List key changes -->
+<!-- List of one line key changes -->
 
 ### Checklist
 
@@ -31,6 +30,6 @@
 - [ ] I have commented on my code, particularly in hard-to-understand areas.
 - [ ] I have made corresponding changes to the documentation.
 
-### Notes
+#### Notes
 
 <!-- Optional: Add additional context -->
