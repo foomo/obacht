@@ -43,6 +43,7 @@ export default defineConfig({
           { text: 'Docker', link: '/rules/docker' },
           { text: 'Environment', link: '/rules/env' },
           { text: 'Git', link: '/rules/git' },
+          { text: 'GitHub CLI', link: '/rules/gh' },
           { text: 'Go', link: '/rules/go' },
           { text: 'Kubernetes', link: '/rules/kube' },
           { text: 'mise', link: '/rules/mise' },
