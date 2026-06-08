@@ -648,27 +648,7 @@ sudo cp /etc/pam.d/sudo_local.template /etc/pam.d/sudo_local
 sudo sed -i '' 's/^#auth/auth/' /etc/pam.d/sudo_local
 ```
 
-## OS043: Wi-Fi MAC address randomization is disabled for some networks
-
-**Severity:** info
-
-A persistent Wi-Fi MAC address allows networks and on-path observers to fingerprint and track the device across
-locations and over time. macOS supports per-network "Private Wi-Fi address" — this should be enabled on every saved
-network.
-
-**What it checks:**
-
-- Each known network's `PrivateMACAddressModeUserSetting` /
-  `PrivateMACAddressModeSystemSetting` in
-  `com.apple.wifi.known-networks.plist` (falls back to
-  `com.apple.airport.preferences.plist`)
-
-**Remediation:**
-
-For each affected network: System Settings > Wi-Fi > _network_ > Details > Private Wi-Fi address — set to **Rotating**
-or **Fixed**.
-
-## OS044: Finder hides file extensions
+## OS043: Finder hides file extensions
 
 **Severity:** info
 
@@ -685,7 +665,7 @@ such double-extension social engineering attempts more obvious.
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true
 ```
 
-## OS045: New documents default to saving in iCloud Drive
+## OS044: New documents default to saving in iCloud Drive
 
 **Severity:** info
 
@@ -702,7 +682,7 @@ location should be local-only so files are not silently synced to Apple servers.
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 ```
 
-## OS046: Bonjour multicast advertisements are enabled
+## OS045: Bonjour multicast advertisements are enabled
 
 **Severity:** info
 

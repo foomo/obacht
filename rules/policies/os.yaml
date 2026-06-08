@@ -356,16 +356,6 @@ rules:
       On macOS 14+: sudo cp /etc/pam.d/sudo_local.template /etc/pam.d/sudo_local
       then uncomment the `auth sufficient pam_tid.so` line.
   - id: OS043
-    title: Wi-Fi MAC address randomization is disabled for some networks
-    severity: info
-    category: os
-    description: |
-      A persistent Wi-Fi MAC address allows networks and on-path
-      observers to fingerprint and track the device across locations
-      and over time. macOS supports per-network "Private Wi-Fi
-      address" — this should be enabled on every saved network.
-    remediation: "For each affected network: System Settings > Wi-Fi > <network> > Details > Private Wi-Fi address — set to Rotating or Fixed"
-  - id: OS044
     title: Finder hides file extensions
     severity: info
     category: os
@@ -374,7 +364,7 @@ rules:
       as `Evil.jpg` in Finder. Showing all extensions makes such
       double-extension social engineering attempts more obvious.
     remediation: "Run: defaults write NSGlobalDomain AppleShowAllExtensions -bool true"
-  - id: OS045
+  - id: OS044
     title: New documents default to saving in iCloud Drive
     severity: info
     category: os
@@ -384,7 +374,7 @@ rules:
       should be local-only so files are not silently synced to Apple
       servers.
     remediation: "Run: defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false"
-  - id: OS046
+  - id: OS045
     title: Bonjour multicast advertisements are enabled
     severity: info
     category: os

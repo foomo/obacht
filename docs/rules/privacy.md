@@ -38,7 +38,7 @@ Configure a VPN in System Settings > Network > VPN, or install a VPN application
 
 ## PRV003: Encrypted DNS is not configured
 
-**Severity:** warn
+**Severity:** note
 
 DNS-over-HTTPS (DoH) or DNS-over-TLS (DoT) encrypts DNS queries, preventing network observers from seeing which domains you visit. Standard DNS queries are sent in plaintext.
 

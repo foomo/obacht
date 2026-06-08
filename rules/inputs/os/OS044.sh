@@ -10,10 +10,11 @@ if [ "$os" != "darwin" ]; then
   exit 0
 fi
 
-show_all_extensions=false
-value=$(defaults read NSGlobalDomain AppleShowAllExtensions 2>/dev/null)
-if [ "$value" = "1" ]; then
-  show_all_extensions=true
+save_to_icloud=false
+value=$(defaults read NSGlobalDomain NSDocumentSaveNewDocumentsToCloud 2>/dev/null)
+# Default behaviour when key is absent is to save to iCloud (= true)
+if [ -z "$value" ] || [ "$value" = "1" ]; then
+  save_to_icloud=true
 fi
 
-jq -cn --arg os "$os" --argjson e "$show_all_extensions" '{os: $os, show_all_extensions: $e}' | emit_ok OS044
+jq -cn --arg os "$os" --argjson e "$save_to_icloud" '{os: $os, save_to_icloud: $e}' | emit_ok OS044

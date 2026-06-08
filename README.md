@@ -9,6 +9,8 @@
   <img alt="obacht" src="docs/public/logo.png" width="400" height="400"/>
 </p>
 
+# Obacht
+
 > Security scanner for developer environments
 
 obacht inspects your local development setup for security misconfigurations — insecure file permissions, exposed credentials, weak SSH/Git settings, risky Docker access — using an embedded [OPA](https://www.openpolicyagent.org/) engine and Rego policies. It is lightweight, read-only, and requires no agent or endpoint management platform.

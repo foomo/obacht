@@ -9,3 +9,37 @@ rules:
       an absolute cutoff date are both accepted. A value below 7 days
       offers limited supply-chain protection.
     remediation: 'Add `[settings]` `minimum_release_age = "7d"` to your mise config (or run `mise settings set minimum_release_age 7d`)'
+
+  - id: MIS002
+    title: mise not_found_auto_install is enabled
+    severity: warn
+    category: mise
+    description: |
+      mise's `not_found_auto_install` defaults to true, meaning a typo'd or
+      attacker-controlled tool name in mise.toml is silently installed on
+      first shell activation. Disabling forces explicit `mise install` and
+      surfaces supply-chain decisions to the user.
+    remediation: 'Set `not_found_auto_install = false` in `~/.config/mise/config.toml` (or run `mise settings set not_found_auto_install false`)'
+
+  - id: MIS003
+    title: mise status.missing_tools is not "always"
+    severity: info
+    category: mise
+    description: |
+      mise's `status.missing_tools` controls when mise warns about tools
+      listed in config but not installed. The default ("if_other_versions_installed")
+      can hide drift. Setting it to "always" surfaces missing tools in every
+      shell, reducing the chance a check-in references something nobody else has.
+    remediation: 'Set `status.missing_tools = "always"` in `~/.config/mise/config.toml` (or run `mise settings set status.missing_tools always`)'
+
+  - id: MIS004
+    title: mise github.credential_command is not "gh auth token"
+    severity: info
+    category: mise
+    description: |
+      mise hits GitHub for release metadata when installing many tools. Without
+      a credential, requests are anonymous and rate-limited per-IP. Setting
+      `github.credential_command = "gh auth token"` reuses the local gh CLI
+      session for authenticated requests, raising rate limits and avoiding
+      leaks via unauthenticated traffic.
+    remediation: 'Set `github.credential_command = "gh auth token"` in `~/.config/mise/config.toml` (or run `mise settings set github.credential_command "gh auth token"`)'
