@@ -1,10 +1,10 @@
 ### Description
 
-<!-- Required: One line summary of what the PR is about -->
+<!-- Required: One-line summary of what the PR is about -->
 
 ### Type of Change
 
-<!-- Check the relevant option, keep unselected ones. -->
+<!-- Required: Check the relevant option, keep unselected ones -->
 
 - [ ] 🐛 Bug fix
 - [ ] ✨ New feature
@@ -17,11 +17,11 @@
 
 ### Related Issues
 
-<!-- List of links to related issues: Fixes #123, Closes #456 -->
+<!-- Optional: List of links to related issues: Fixes #123, Closes #456 -->
 
 ### Changes
 
-<!-- List of one line key changes -->
+<!-- Optional: List of one-line key changes -->
 
 ### Checklist
 
