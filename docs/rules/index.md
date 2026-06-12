@@ -1,6 +1,6 @@
 # Rules Overview
 
-obacht includes 146 built-in rules across 21 categories.
+obacht includes 150 built-in rules across 21 categories.
 
 | ID     | Category    | Title                                                                     | Severity |
 |--------|-------------|---------------------------------------------------------------------------|----------|
@@ -123,6 +123,7 @@ obacht includes 146 built-in rules across 21 categories.
 | BRW003 | Brew        | Homebrew analytics is not disabled                                        | warn     |
 | BUN001 | Bun         | bun install.minimumReleaseAge is below 7 days                             | high     |
 | BUN002 | Bun         | bun install scripts are not disabled                                      | high     |
+| BUN003 | Bun         | bun auth token stored in plaintext in bunfig.toml                         | critical |
 | GO001  | Go          | Go telemetry is not disabled                                              | warn     |
 | MIS001 | mise        | mise minimum_release_age is below 7 days                                  | high     |
 | MIS002 | mise        | mise not_found_auto_install is enabled                                    | warn     |
@@ -132,9 +133,12 @@ obacht includes 146 built-in rules across 21 categories.
 | NPM002 | npm         | npm install scripts are not disabled                                      | high     |
 | NPM003 | npm         | npm allow-git is not restricted to none or root                           | high     |
 | NPM004 | npm         | npm registry is not https                                                 | high     |
+| NPM005 | npm         | npm auth token stored in plaintext in user .npmrc                         | critical |
 | PNP001 | pnpm        | pnpm minimumReleaseAge is below 7 days                                    | high     |
 | PNP002 | pnpm        | pnpm blockExoticSubdeps is not enabled                                    | high     |
 | PNP003 | pnpm        | pnpm trustPolicy is not set to no-downgrade                               | high     |
 | PNP004 | pnpm        | pnpm strictDepBuilds is not enabled                                       | high     |
+| PNP005 | pnpm        | pnpm auth token stored in plaintext in user .npmrc                        | critical |
 | YRN001 | Yarn        | yarn npmMinimalAgeGate is below 7 days                                    | high     |
 | YRN002 | Yarn        | yarn install scripts are not disabled                                     | high     |
+| YRN003 | Yarn        | yarn auth token stored in plaintext in .yarnrc.yml                        | critical |

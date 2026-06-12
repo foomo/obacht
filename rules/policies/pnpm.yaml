@@ -48,3 +48,16 @@ rules:
       slip past review. Enabling this turns warnings into CI-blocking
       failures.
     remediation: 'Add `strictDepBuilds: true` to pnpm-workspace.yaml, or run `pnpm config set strictDepBuilds true --location=user`'
+  - id: PNP005
+    title: pnpm auth token stored in plaintext in user .npmrc
+    severity: critical
+    category: pnpm
+    description: |
+      pnpm reuses npm's `.npmrc` for registry authentication. Literal
+      values for `_authToken`, `_auth`, `_password`, and `_authIdent`
+      sit at rest where any local process, backup, or compromised
+      dependency can exfiltrate them, granting publish rights to the
+      developer's packages. Env-var references such as `${NPM_TOKEN}`
+      are accepted as safe indirection and pass. This rule overlaps
+      NPM005 by design — pnpm and npm read the same file.
+    remediation: "Replace literal tokens with `${NPM_TOKEN}` in `~/.npmrc` and inject the actual value from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk."

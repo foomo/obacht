@@ -33,3 +33,23 @@ Bun runs lifecycle scripts (preinstall, install, postinstall, prepare) declared 
 [install]
 ignoreScripts = true
 ```
+
+## BUN003: bun auth token stored in plaintext in bunfig.toml
+
+**Severity:** critical
+
+Bun stores registry credentials in `bunfig.toml` under `[install.registry]`, `[install.scopes."<scope>"]`, or as inline tables beneath `[install.scopes]`. Literal values for `token`, `username`, or `password` left on disk are recoverable by any process that can read the file — malware, compromised dependencies, sync clients, or backups. Env-var references such as `$NPM_TOKEN` are accepted as safe indirection and pass.
+
+**What it checks:**
+- Whether `bun` is on `PATH` (skipped if not installed)
+- Resolves bunfig from `$BUN_CONFIG_FILE`, `$XDG_CONFIG_HOME/.bunfig.toml`, `$HOME/.config/.bunfig.toml`, then `$HOME/.bunfig.toml`
+- Walks each `[install.registry]` and `[install.scopes…]` section (including inline-table values) and flags any literal `token`, `username`, or `password` assignment
+
+**Remediation:**
+```toml
+# ~/.bunfig.toml — env-var indirection, safe
+[install.scopes]
+"@myorg" = { url = "https://npm.example.com/", token = "$NPM_TOKEN" }
+```
+
+Inject `NPM_TOKEN` from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk.

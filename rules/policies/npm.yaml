@@ -48,3 +48,17 @@ rules:
       every publish. Confirms the resolved value of `npm config get
       registry` starts with `https://`.
     remediation: "Run `npm config set registry https://registry.npmjs.org/ --location=user` (or your private registry's HTTPS URL)"
+  - id: NPM005
+    title: npm auth token stored in plaintext in user .npmrc
+    severity: critical
+    category: npm
+    description: |
+      Registry credentials (`_authToken`, `_auth`, `_password`,
+      `_authIdent`) written as literal values in `~/.npmrc` are
+      recoverable by any process that can read the file — malware,
+      compromised dependencies, sync clients, or backups. A stolen
+      token grants publish rights to every package the developer
+      owns, the primary first step in npm supply-chain attacks.
+      Env-var references such as `${NPM_TOKEN}` are accepted as
+      safe indirection and pass.
+    remediation: "Replace literal tokens with `${NPM_TOKEN}` in `~/.npmrc` and inject the actual value from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk."

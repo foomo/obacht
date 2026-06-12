@@ -25,3 +25,16 @@ rules:
       bunfig is resolved from `$BUN_CONFIG_FILE`, `$XDG_CONFIG_HOME`,
       then `$HOME`.
     remediation: 'Add `[install]` `ignoreScripts = true` to `~/.bunfig.toml`'
+  - id: BUN003
+    title: bun auth token stored in plaintext in bunfig.toml
+    severity: critical
+    category: bun
+    description: |
+      Bun stores registry credentials in `bunfig.toml` under
+      `[install.registry]`, `[install.scopes."<scope>"]`, or as
+      inline tables beneath `[install.scopes]`. Literal values for
+      `token`, `username`, or `password` left on disk are recoverable
+      by any process that can read the file — malware, compromised
+      dependencies, sync clients, or backups. Env-var references such
+      as `$NPM_TOKEN` are accepted as safe indirection and pass.
+    remediation: "Replace literal tokens with `$NPM_TOKEN` in `~/.bunfig.toml` and inject the actual value from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk."
