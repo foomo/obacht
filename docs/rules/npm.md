@@ -70,3 +70,22 @@ npm config set registry https://registry.npmjs.org/ --location=user
 # or your private registry's HTTPS URL
 npm config set registry https://npm.yourcompany.com/ --location=user
 ```
+
+## NPM005: npm auth token stored in plaintext in user .npmrc
+
+**Severity:** critical
+
+Registry credentials (`_authToken`, `_auth`, `_password`, `_authIdent`) written as literal values in `~/.npmrc` are recoverable by any process that can read the file — malware, compromised dependencies, sync clients, or backups. A stolen token grants publish rights to every package the developer owns, the primary first step in npm supply-chain attacks. Env-var references such as `${NPM_TOKEN}` are accepted as safe indirection and pass.
+
+**What it checks:**
+- Whether `npm` is on `PATH` (skipped if not installed)
+- Reads `${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}` if it exists
+- Flags any literal (non-empty, non-env-var) value assigned to `_authToken`, `_auth`, `_password`, or `_authIdent` (including registry-scoped keys like `//registry.npmjs.org/:_authToken`)
+
+**Remediation:**
+```ini
+# ~/.npmrc — env-var indirection, safe
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+```
+
+Inject `NPM_TOKEN` from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk.

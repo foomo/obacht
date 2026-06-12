@@ -86,3 +86,22 @@ allowBuilds:
 # or user-level
 pnpm config set strictDepBuilds true --location=user
 ```
+
+## PNP005: pnpm auth token stored in plaintext in user .npmrc
+
+**Severity:** critical
+
+pnpm reuses npm's `.npmrc` for registry authentication. Literal values for `_authToken`, `_auth`, `_password`, and `_authIdent` left at rest can be exfiltrated by any local process, backup, or compromised dependency, granting publish rights to the developer's packages. Env-var references such as `${NPM_TOKEN}` are accepted as safe indirection and pass. This rule overlaps NPM005 by design — pnpm and npm read the same file.
+
+**What it checks:**
+- Whether `pnpm` is on `PATH` (skipped if not installed)
+- Reads `${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}` if it exists
+- Flags any literal (non-empty, non-env-var) value assigned to `_authToken`, `_auth`, `_password`, or `_authIdent`
+
+**Remediation:**
+```ini
+# ~/.npmrc — env-var indirection, safe
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}
+```
+
+Inject `NPM_TOKEN` from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk.

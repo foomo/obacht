@@ -42,3 +42,23 @@ enableScripts: false
 ```
 
 Note: with `enableScripts: false`, packages that need a native build (`esbuild`, `sharp`, `node-gyp` users) must be allow-listed via `npmPreapprovedPackages` in `.yarnrc.yml`.
+
+## YRN003: yarn auth token stored in plaintext in .yarnrc.yml
+
+**Severity:** critical
+
+Yarn berry stores `npmAuthToken` and `npmAuthIdent` either at the top level of `~/.yarnrc.yml` or nested under `npmRegistries:` / `npmScopes:` blocks. Literal values left on disk are recoverable by any process that can read the file — malware, compromised dependencies, sync clients, or backups. Env-var references such as `${NPM_TOKEN}` are accepted as safe indirection and pass. Yarn classic (1.x) does not use this file format and is skipped.
+
+**What it checks:**
+- Whether `yarn` is on `PATH` (skipped if not installed)
+- Whether `yarn --version` reports `2.x+` (yarn 1.x is skipped)
+- Reads `~/.yarnrc.yml` if it exists
+- Flags any literal (non-empty, non-env-var) value assigned to `npmAuthToken` or `npmAuthIdent`, at any indentation level
+
+**Remediation:**
+```yaml
+# ~/.yarnrc.yml — env-var indirection, safe
+npmAuthToken: "${NPM_TOKEN}"
+```
+
+Inject `NPM_TOKEN` from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk.

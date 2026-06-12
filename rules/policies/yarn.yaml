@@ -22,3 +22,17 @@ rules:
       compromised npm packages. Yarn classic (1.x) lacks an equivalent
       global toggle and is skipped.
     remediation: 'Run `yarn config set --home enableScripts false` (or set `enableScripts: false` in `~/.yarnrc.yml`)'
+  - id: YRN003
+    title: yarn auth token stored in plaintext in .yarnrc.yml
+    severity: critical
+    category: yarn
+    description: |
+      Yarn berry stores `npmAuthToken` and `npmAuthIdent` either at
+      the top level of `~/.yarnrc.yml` or nested under
+      `npmRegistries:` / `npmScopes:` blocks. Literal values left on
+      disk are recoverable by any process that can read the file —
+      malware, compromised dependencies, sync clients, or backups.
+      Env-var references such as `${NPM_TOKEN}` are accepted as safe
+      indirection and pass. Yarn classic (1.x) does not use this file
+      format and is skipped.
+    remediation: 'Replace literal tokens with `${NPM_TOKEN}` in `~/.yarnrc.yml` and inject the actual value from a keychain, password manager, or CI secret store at session start. Rotate any token that has been on disk.'
